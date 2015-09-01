@@ -7,10 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E146F6C41B95655600809828 /* HoughOutputImage.m in Sources */ = {isa = PBXBuildFile; fileRef = E146F6C31B95655600809828 /* HoughOutputImage.m */; };
 		E1CAC0FB1B7FF0E300D4EA94 /* HoughPlugIn.m in Sources */ = {isa = PBXBuildFile; fileRef = E1CAC0FA1B7FF0E300D4EA94 /* HoughPlugIn.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		E146F6C21B95655600809828 /* HoughOutputImage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HoughOutputImage.h; sourceTree = "<group>"; };
+		E146F6C31B95655600809828 /* HoughOutputImage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HoughOutputImage.m; sourceTree = "<group>"; };
 		E1CAC0F41B7FF0E300D4EA94 /* Hough.plugin */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Hough.plugin; sourceTree = BUILT_PRODUCTS_DIR; };
 		E1CAC0F81B7FF0E300D4EA94 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		E1CAC0F91B7FF0E300D4EA94 /* HoughPlugIn.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HoughPlugIn.h; sourceTree = "<group>"; };
@@ -49,6 +52,8 @@
 			children = (
 				E1CAC0F91B7FF0E300D4EA94 /* HoughPlugIn.h */,
 				E1CAC0FA1B7FF0E300D4EA94 /* HoughPlugIn.m */,
+				E146F6C21B95655600809828 /* HoughOutputImage.h */,
+				E146F6C31B95655600809828 /* HoughOutputImage.m */,
 				E1CAC0F71B7FF0E300D4EA94 /* Supporting Files */,
 			);
 			path = Hough;
@@ -145,6 +150,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E146F6C41B95655600809828 /* HoughOutputImage.m in Sources */,
 				E1CAC0FB1B7FF0E300D4EA94 /* HoughPlugIn.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

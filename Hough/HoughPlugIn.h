@@ -10,8 +10,7 @@
 
 @interface HoughPlugIn : QCPlugIn
 
-// Declare here the properties to be used as input and output ports for the plug-in e.g.
-//@property double inputFoo;
-//@property (copy) NSString* outputBar;
+@property (assign) id<QCPlugInInputImageSource> inputImage;
+@property (retain) id<QCPlugInOutputImageProvider> outputImage;
 
 @end
