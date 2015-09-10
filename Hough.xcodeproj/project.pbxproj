@@ -7,10 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AE46AFA41BA0E17A004A2008 /* Sample.png in Resources */ = {isa = PBXBuildFile; fileRef = AE46AFA31BA0E17A004A2008 /* Sample.png */; };
 		E1CAC0FB1B7FF0E300D4EA94 /* HoughPlugIn.m in Sources */ = {isa = PBXBuildFile; fileRef = E1CAC0FA1B7FF0E300D4EA94 /* HoughPlugIn.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		AE46AFA21BA0E161004A2008 /* Test Hough.qtz */ = {isa = PBXFileReference; lastKnownFileType = "video.quartz-composer"; path = "Test Hough.qtz"; sourceTree = "<group>"; };
+		AE46AFA31BA0E17A004A2008 /* Sample.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Sample.png; sourceTree = "<group>"; };
 		E1CAC0F41B7FF0E300D4EA94 /* Hough.plugin */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Hough.plugin; sourceTree = BUILT_PRODUCTS_DIR; };
 		E1CAC0F81B7FF0E300D4EA94 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		E1CAC0F91B7FF0E300D4EA94 /* HoughPlugIn.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HoughPlugIn.h; sourceTree = "<group>"; };
@@ -28,10 +31,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		AE46AFA11BA0E14E004A2008 /* Other Resources */ = {
+			isa = PBXGroup;
+			children = (
+				AE46AFA21BA0E161004A2008 /* Test Hough.qtz */,
+				AE46AFA31BA0E17A004A2008 /* Sample.png */,
+			);
+			name = "Other Resources";
+			sourceTree = "<group>";
+		};
 		E1CAC0EA1B7FF0E300D4EA94 = {
 			isa = PBXGroup;
 			children = (
 				E1CAC0F61B7FF0E300D4EA94 /* Hough */,
+				AE46AFA11BA0E14E004A2008 /* Other Resources */,
 				E1CAC0F51B7FF0E300D4EA94 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -119,6 +132,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AE46AFA41BA0E17A004A2008 /* Sample.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -270,6 +284,7 @@
 				E1CAC1001B7FF0E300D4EA94 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
