@@ -7,17 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AE46AFA41BA0E17A004A2008 /* Sample.png in Resources */ = {isa = PBXBuildFile; fileRef = AE46AFA31BA0E17A004A2008 /* Sample.png */; };
 		E1CAC0FB1B7FF0E300D4EA94 /* HoughPlugIn.m in Sources */ = {isa = PBXBuildFile; fileRef = E1CAC0FA1B7FF0E300D4EA94 /* HoughPlugIn.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		AE46AFA21BA0E161004A2008 /* Test Hough.qtz */ = {isa = PBXFileReference; lastKnownFileType = "video.quartz-composer"; path = "Test Hough.qtz"; sourceTree = "<group>"; };
 		AE46AFA31BA0E17A004A2008 /* Sample.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Sample.png; sourceTree = "<group>"; };
+		E19628691BA3CD02006598B0 /* Sample-2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Sample-2.png"; sourceTree = "<group>"; };
 		E1CAC0F41B7FF0E300D4EA94 /* Hough.plugin */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Hough.plugin; sourceTree = BUILT_PRODUCTS_DIR; };
 		E1CAC0F81B7FF0E300D4EA94 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		E1CAC0F91B7FF0E300D4EA94 /* HoughPlugIn.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HoughPlugIn.h; sourceTree = "<group>"; };
 		E1CAC0FA1B7FF0E300D4EA94 /* HoughPlugIn.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HoughPlugIn.m; sourceTree = "<group>"; };
+		E1FDB3821BA4BCED00FA61A5 /* Sample-3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Sample-3.png"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -36,6 +37,8 @@
 			children = (
 				AE46AFA21BA0E161004A2008 /* Test Hough.qtz */,
 				AE46AFA31BA0E17A004A2008 /* Sample.png */,
+				E19628691BA3CD02006598B0 /* Sample-2.png */,
+				E1FDB3821BA4BCED00FA61A5 /* Sample-3.png */,
 			);
 			name = "Other Resources";
 			sourceTree = "<group>";
@@ -102,7 +105,7 @@
 		E1CAC0EB1B7FF0E300D4EA94 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0640;
+				LastUpgradeCheck = 0700;
 				ORGANIZATIONNAME = "Rob Menke";
 				TargetAttributes = {
 					E1CAC0F31B7FF0E300D4EA94 = {
@@ -132,7 +135,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AE46AFA41BA0E17A004A2008 /* Sample.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -186,6 +188,7 @@
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -249,6 +252,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = Hough/Info.plist;
 				INSTALL_PATH = "$(HOME)/Library/Graphics/Quartz Composer Plug-Ins";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.the-wabe.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = plugin;
 			};
@@ -260,6 +264,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = Hough/Info.plist;
 				INSTALL_PATH = "$(HOME)/Library/Graphics/Quartz Composer Plug-Ins";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.the-wabe.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = plugin;
 			};

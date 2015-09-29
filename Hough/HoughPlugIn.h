@@ -11,8 +11,7 @@
 @interface HoughPlugIn : QCPlugIn
 
 @property (readonly) id<QCPlugInInputImageSource> inputImage;
-@property (readonly) NSUInteger inputThreshold;
-@property (readonly) NSUInteger inputLineCount;
+@property (readonly) CGFloat inputThreshold;
 
 @property (retain) id<QCPlugInOutputImageProvider> outputImage;
 @property (retain) NSArray *outputStructure;
