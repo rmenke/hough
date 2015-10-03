@@ -43,7 +43,6 @@ void __buffer_release(const void *address, void *context) {
         propertyDictionary = @{
             @"inputImage": @{QCPortAttributeNameKey: @"Image"},
             @"inputThreshold": @{QCPortAttributeNameKey: @"Threshold", QCPortAttributeTypeKey: QCPortTypeNumber, QCPortAttributeDefaultValueKey: @(0.5), QCPortAttributeMinimumValueKey: @(0.0), QCPortAttributeMaximumValueKey: @(1.0)},
-            @"inputLineCount": @{QCPortAttributeNameKey: @"Line Count", QCPortAttributeTypeKey: QCPortTypeNumber, QCPortAttributeDefaultValueKey: @(10), QCPortAttributeMinimumValueKey: @(1)},
             @"outputStructure": @{QCPortAttributeNameKey: @"Line Info", QCPortAttributeTypeKey: QCPortTypeStructure},
             @"outputImage": @{QCPortAttributeNameKey: @"Output"}
         };
@@ -102,11 +101,15 @@ void __buffer_release(const void *address, void *context) {
     // R + biasR ∈ [0, 2 * biasR)
     NSUInteger maxR = 2 * biasR;
 
-    if (maxR == 0) return NO;
+    vImage_Buffer buffer;
+    vImage_Error error;
 
-    NSMutableData *registers = [NSMutableData dataWithLength:maxR * MAX_THETA * sizeof(int32_t)];
+    if ((error = vImageBuffer_Init(&buffer, maxR, MAX_THETA, 32, kvImageNoFlags)) != kvImageNoError) {
+        [context logMessage:@"vImageBuffer_Init: error = %zd", error];
+        return NO;
+    }
 
-    volatile int32_t (*writeRegister)[MAX_THETA] = (volatile int32_t (*)[MAX_THETA])(registers.mutableBytes);
+    memset(buffer.data, 0, buffer.rowBytes * buffer.height);
 
     __block volatile int32_t max = 0;
 
@@ -128,7 +131,9 @@ void __buffer_release(const void *address, void *context) {
                         NSInteger r = lround(x * cos_theta + y * sin_theta) + biasR;
 
                         if (r >= 0 && r < maxR) {
-                            int32_t count = OSAtomicIncrement32(&(writeRegister[r][theta]));
+                            volatile int32_t *cell = buffer.data + buffer.rowBytes * r + sizeof(int32_t) * theta;
+
+                            int32_t count = OSAtomicIncrement32(cell);
                             BOOL done = NO;
                             do {
                                 int32_t oldMax = max;
@@ -151,23 +156,11 @@ void __buffer_release(const void *address, void *context) {
 
     [inputImage unlockBufferRepresentation];
 
-    const int32_t (*readRegister)[MAX_THETA] = (const int32_t (*)[MAX_THETA])(registers.bytes);
-
-    vImage_Buffer buffer;
-
-    vImage_Error vImageError;
-
-    vImageError = vImageBuffer_Init(&buffer, maxR, MAX_THETA, 32, kvImageNoFlags);
-    if (vImageError != kvImageNoError) {
-        [context logMessage:@"vImageBuffer_Init: error = %zd", vImageError];
-        return NO;
-    }
-
     for (NSUInteger r = 0; r < maxR; ++r) {
-        const int32_t *srcRow = readRegister[r];
-        Float32 *dstRow = (buffer.data + buffer.rowBytes * r);
+        const int32_t *srcRow = buffer.data + buffer.rowBytes * r;
+        Float32 *dstRow = buffer.data + buffer.rowBytes * r;
         for (NSUInteger theta = 0; theta < MAX_THETA; ++theta) {
-            dstRow[theta] = (Float32)(srcRow[theta]) / max;
+            dstRow[theta] = srcRow[theta];
         }
     }
 
