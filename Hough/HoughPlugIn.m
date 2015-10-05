@@ -11,8 +11,8 @@
 @import Darwin.C.tgmath;
 @import Accelerate;
 
-#define	kQCPlugIn_Name			@"Hough"
-#define	kQCPlugIn_Description   @"Perform a Hough transformation on an image."
+#define kQCPlugIn_Name          @"Hough"
+#define kQCPlugIn_Description   @"Perform a Hough transformation on an image."
 
 #define MAX_THETA 180 /* per semiturn */
 
@@ -52,11 +52,11 @@ void __buffer_release(const void *address, void *context) {
 }
 
 + (QCPlugInExecutionMode)executionMode {
-	return kQCPlugInExecutionModeProcessor;
+    return kQCPlugInExecutionModeProcessor;
 }
 
 + (QCPlugInTimeMode)timeMode {
-	return kQCPlugInTimeModeNone;
+    return kQCPlugInTimeModeNone;
 }
 
 @end
