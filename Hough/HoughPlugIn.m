@@ -14,7 +14,7 @@
 #define kQCPlugIn_Name          @"Hough"
 #define kQCPlugIn_Description   @"Perform a Hough transformation on an image."
 
-#define MAX_THETA 180 /* per semiturn */
+#define PER_SEMITURN 180
 
 typedef struct Line { NSUInteger r, theta; int32_t pixelCount; } Line;
 
@@ -95,16 +95,18 @@ void __buffer_release(const void *address, void *context) {
 
     if (width == 0 || height == 0) return NO;
 
-    NSUInteger biasR = 1 + ceil(hypot(width, height));
+    NSInteger biasR = ceil(hypot(width, height));
 
-    //         R ∈ [-biasR, +biasR)
-    // R + biasR ∈ [0, 2 * biasR)
-    NSUInteger maxR = 2 * biasR;
+    const NSInteger minTheta = 0;
+    const NSInteger maxTheta = PER_SEMITURN;
+
+    NSInteger rangeR     = 2 * biasR + 1;
+    NSInteger rangeTheta = maxTheta - minTheta;
 
     vImage_Buffer buffer;
     vImage_Error error;
 
-    if ((error = vImageBuffer_Init(&buffer, maxR, MAX_THETA, 32, kvImageNoFlags)) != kvImageNoError) {
+    if ((error = vImageBuffer_Init(&buffer, rangeR, rangeTheta, 32, kvImageNoFlags)) != kvImageNoError) {
         [context logMessage:@"vImageBuffer_Init: error = %zd", error];
         return NO;
     }
@@ -122,17 +124,17 @@ void __buffer_release(const void *address, void *context) {
             float *cell = row + x;
             if (*cell <= threshold) {
                 dispatch_group_async(group, queue, ^{
-                    for (NSUInteger theta = 0; theta < MAX_THETA; ++theta) {
-                        const CGFloat semiturns = theta / (CGFloat)(MAX_THETA);
+                    for (NSInteger theta = minTheta; theta < maxTheta; ++theta) {
+                        const CGFloat semiturns = theta / (CGFloat)(PER_SEMITURN);
 
                         CGFloat sin_theta, cos_theta;
                         __sincospi(semiturns, &sin_theta, &cos_theta);
 
-                        NSInteger r = lround(x * cos_theta + y * sin_theta) + biasR;
+                        NSInteger r = lround(x * cos_theta + y * sin_theta);
 
-                        if (r >= 0 && r < maxR) {
-                            volatile int32_t *cell = buffer.data + buffer.rowBytes * r + sizeof(int32_t) * theta;
-
+                        if (r >= -biasR && r <= +biasR) {
+                            volatile int32_t *cell = buffer.data + (buffer.rowBytes * (r + biasR));
+                            cell += theta - minTheta;
                             int32_t count = OSAtomicIncrement32(cell);
                             BOOL done = NO;
                             do {
@@ -156,13 +158,13 @@ void __buffer_release(const void *address, void *context) {
 
     [inputImage unlockBufferRepresentation];
 
-    for (NSUInteger r = 0; r < maxR; ++r) {
-        const int32_t *srcRow = buffer.data + buffer.rowBytes * r;
-        Float32 *dstRow = buffer.data + buffer.rowBytes * r;
-        for (NSUInteger theta = 0; theta < MAX_THETA; ++theta) {
-            dstRow[theta] = srcRow[theta];
+    dispatch_apply(rangeR, queue, ^(size_t r) {
+        Float32 * const row = buffer.data + buffer.rowBytes * r;
+        for (NSInteger theta = 0; theta < rangeTheta; ++theta) {
+            Float32 * const cell = row + theta;
+            *cell = *(int32_t *)(cell);
         }
-    }
+    });
 
     self.outputImage = [context outputImageProviderFromBufferWithPixelFormat:QCPlugInPixelFormatIf pixelsWide:buffer.width pixelsHigh:buffer.height baseAddress:buffer.data bytesPerRow:buffer.rowBytes releaseCallback:__buffer_release releaseContext:NULL colorSpace:_gray shouldColorMatch:NO];
 
