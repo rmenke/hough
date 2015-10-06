@@ -16,12 +16,6 @@
 
 #define PER_SEMITURN 180
 
-typedef struct Line { NSUInteger r, theta; int32_t pixelCount; } Line;
-
-int _line_compare(const void *a, const void *b) {
-    return ((Line *)b)->pixelCount - ((Line *)a)->pixelCount;
-}
-
 void __buffer_release(const void *address, void *context) {
     free((void *)address);
 }
@@ -97,8 +91,10 @@ void __buffer_release(const void *address, void *context) {
 
     NSInteger biasR = ceil(hypot(width, height));
 
-    const NSInteger minTheta = 0;
-    const NSInteger maxTheta = PER_SEMITURN;
+    const NSInteger margin   = 25;
+
+    const NSInteger minTheta = - margin;
+    const NSInteger maxTheta = PER_SEMITURN + margin;
 
     NSInteger rangeR     = 2 * biasR + 1;
     NSInteger rangeTheta = maxTheta - minTheta;
@@ -151,6 +147,7 @@ void __buffer_release(const void *address, void *context) {
     dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
 
     if (max == 0) {
+        free(buffer.data);
         self.outputImage = nil;
         self.outputStructure = @[];
         return YES;
@@ -166,9 +163,56 @@ void __buffer_release(const void *address, void *context) {
         }
     });
 
-    self.outputImage = [context outputImageProviderFromBufferWithPixelFormat:QCPlugInPixelFormatIf pixelsWide:buffer.width pixelsHigh:buffer.height baseAddress:buffer.data bytesPerRow:buffer.rowBytes releaseCallback:__buffer_release releaseContext:NULL colorSpace:_gray shouldColorMatch:NO];
+    NSMutableArray<NSDictionary *> *lines = [NSMutableArray array];
 
-    self.outputStructure = @[];
+    {
+        vImage_Buffer maxima;
+
+        if ((error = vImageBuffer_Init(&maxima, rangeR, PER_SEMITURN, 32, kvImageNoFlags)) != kvImageNoError) {
+            [context logMessage:@"vImageBuffer_Init: error = %zd", error];
+            free(buffer.data);
+            return NO;
+        }
+
+        NSUInteger kernelSize = margin * 2 - 1;
+        float kernel[kernelSize * kernelSize];
+        memset(kernel, 0, sizeof(kernel));
+
+        if ((error = vImageDilate_PlanarF(&buffer, &maxima, margin, 0, kernel, kernelSize, kernelSize, kvImageNoFlags)) != kvImageNoError) {
+            [context logMessage:@"vImageDilate_PlanarF: error = %zd", error];
+            free(maxima.data);
+            free(buffer.data);
+            return NO;
+        }
+
+        for (NSInteger r = 0; r < rangeR; ++r) {
+            Float32 * const srcRow = buffer.data + buffer.rowBytes * r;
+            Float32 * const maxRow = maxima.data + maxima.rowBytes * r;
+
+            for (NSInteger theta = 0; theta < PER_SEMITURN; ++theta) {
+                if (srcRow[theta - minTheta] == maxRow[theta] && maxRow[theta] > 0.0) {
+                    NSDictionary *line = @{@"R": @(r), @"Θ": @(theta), @"#": @(lrint(maxRow[theta]))};
+                    [lines addObject:line];
+
+                    maxRow[theta] = 1.0;
+                } else {
+                    maxRow[theta] = 0.0;
+                }
+            }
+        }
+
+        [lines sortUsingComparator:^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
+            return [b[@"#"] compare:a[@"#"]];
+        }];
+
+        self.outputImage = [context outputImageProviderFromBufferWithPixelFormat:QCPlugInPixelFormatIf pixelsWide:maxima.width pixelsHigh:maxima.height baseAddress:maxima.data bytesPerRow:maxima.rowBytes releaseCallback:__buffer_release releaseContext:NULL colorSpace:_gray shouldColorMatch:NO];
+
+        // free(maxima.data);
+    }
+
+    free(buffer.data);
+
+    self.outputStructure = lines;
 
     return YES;
 }
