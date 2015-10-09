@@ -10,6 +10,7 @@
 
 @import Darwin.C.tgmath;
 @import Accelerate;
+@import simd;
 
 #define kQCPlugIn_Name          @"Hough"
 #define kQCPlugIn_Description   @"Perform a Hough transformation on an image."
@@ -20,8 +21,95 @@ void __buffer_release(const void *address, void *context) {
     free((void *)address);
 }
 
+FOUNDATION_STATIC_INLINE
+NSValue *up(NSValue *v) {
+    const NSPoint p = v.pointValue;
+    return [NSValue valueWithPoint:NSMakePoint(p.x, p.y - 1)];
+}
+
+FOUNDATION_STATIC_INLINE
+NSValue *down(NSValue *v) {
+    const NSPoint p = v.pointValue;
+    return [NSValue valueWithPoint:NSMakePoint(p.x, p.y + 1)];
+}
+
+FOUNDATION_STATIC_INLINE
+NSValue *left(NSValue *v) {
+    const NSPoint p = v.pointValue;
+    return [NSValue valueWithPoint:NSMakePoint(p.x - 1, p.y)];
+}
+
+FOUNDATION_STATIC_INLINE
+NSValue *right(NSValue *v) {
+    const NSPoint p = v.pointValue;
+    return [NSValue valueWithPoint:NSMakePoint(p.x + 1, p.y)];
+}
+
+void clusterPoint(NSValue *p, NSMutableSet<NSValue *> *set, NSMutableDictionary<NSValue *, NSNumber *> *lines) {
+    if ([lines objectForKey:p]) {
+        [lines removeObjectForKey:p];
+        [set addObject:p];
+
+        clusterPoint(up(p), set, lines);
+        clusterPoint(down(p), set, lines);
+        clusterPoint(left(p), set, lines);
+        clusterPoint(right(p), set, lines);
+    }
+}
+
+NSDictionary<NSSet<NSValue *> *, NSNumber *> *cluster(NSMutableDictionary<NSValue *, NSNumber *> *lines) {
+    NSValue  *value = [[lines keyEnumerator] nextObject];
+    NSNumber *count = lines[value];
+
+    NSMutableSet<NSValue *> *key = [NSMutableSet setWithObject:value];
+    clusterPoint(value, key, lines);
+
+    return @{key: count};
+}
+
+FOUNDATION_STATIC_INLINE
+void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, const CGFloat height, CGPoint *p1, CGPoint *p2) {
+    CGFloat sin_theta, cos_theta;
+    __sincospi(theta / PER_SEMITURN, &sin_theta, &cos_theta);
+
+    if (sin_theta == 0.0) {
+        CGFloat x = r / cos_theta;
+        p1->x = p2->x = x;
+        p1->y = 0; p2->y = height;
+    } else if (cos_theta == 0.0) {
+        CGFloat y = r / sin_theta;
+        p1->x = 0; p2->x = width;
+        p1->y = p2->y = y;
+    } else {
+        CGFloat x0 = r / cos_theta;
+        CGFloat y0 = r / sin_theta;
+        CGFloat x1 = (r - height * sin_theta) / cos_theta;
+        CGFloat y1 = (r - width * cos_theta) / sin_theta;
+
+        if (0.0 <= x0 && x0 <= width) {
+            p1->x = x0; p1->y = 0;
+        } else if (0.0 <= y0 && y0 <= height) {
+            p1->x = 0; p1->y = y0;
+        } else if (0.0 <= x1 && x1 <= width) {
+            p1->x = x1; p1->y = height;
+        } else if (0.0 <= y1 && y1 <= height) {
+            p1->x = width; p1->y = y1;
+        }
+
+        if (0.0 <= y1 && y1 <= height) {
+            p2->x = width; p2->y = y1;
+        } else if (0.0 <= x1 && x1 <= width) {
+            p2->x = x1; p2->y = height;
+        } else if (0.0 <= y0 && y0 <= height) {
+            p2->x = 0; p2->y = y0;
+        } else if (0.0 <= x0 && x0 <= width) {
+            p2->x = x0; p2->y = 0;
+        }
+    }
+}
+
 @implementation HoughPlugIn {
-    CGColorSpaceRef _gray;
+    CGColorSpaceRef _gray, _bgra;
 }
 
 @dynamic inputImage, inputThreshold, outputStructure, outputImage;
@@ -59,10 +147,16 @@ void __buffer_release(const void *address, void *context) {
 
 - (BOOL)startExecution:(id<QCPlugInContext>)context {
     _gray = CGColorSpaceCreateWithName(kCGColorSpaceGenericGray);
-    return _gray != NULL;
+    if (!_gray) return NO;
+
+    _bgra = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
+    if (!_bgra) return NO;
+
+    return YES;
 }
 
 - (void)stopExecution:(id<QCPlugInContext>)context {
+    if (_bgra) CGColorSpaceRelease(_bgra);
     if (_gray) CGColorSpaceRelease(_gray);
 }
 
@@ -163,8 +257,6 @@ void __buffer_release(const void *address, void *context) {
         }
     });
 
-    NSMutableArray<NSDictionary *> *lines = [NSMutableArray array];
-
     vImage_Buffer maxima;
 
     if ((error = vImageBuffer_Init(&maxima, rangeR, PER_SEMITURN, 32, kvImageNoFlags)) != kvImageNoError) {
@@ -184,31 +276,103 @@ void __buffer_release(const void *address, void *context) {
         return NO;
     }
 
+    NSMutableDictionary<NSValue *, NSNumber *> *lines = [NSMutableDictionary dictionary];
+
     for (NSInteger r = 0; r < rangeR; ++r) {
         Float32 * const srcRow = buffer.data + buffer.rowBytes * r;
         Float32 * const maxRow = maxima.data + maxima.rowBytes * r;
 
         for (NSInteger theta = 0; theta < PER_SEMITURN; ++theta) {
-            if (srcRow[theta - minTheta] == maxRow[theta] && maxRow[theta] > 0.0) {
-                NSDictionary *line = @{@"R": @(r), @"Θ": @(theta), @"#": @(lrint(maxRow[theta]))};
-                [lines addObject:line];
+            CGPoint p1, p2;
+            findIntercepts(r, theta, width, height, &p1, &p2);
+            CGFloat length = hypot(p1.x - p2.x, p1.y - p2.y);
 
-                maxRow[theta] = 1.0;
-            } else {
-                maxRow[theta] = 0.0;
+            if (srcRow[theta - minTheta] == maxRow[theta] && maxRow[theta] > (0.8 * length)) {
+                NSValue *key = [NSValue valueWithPoint:NSMakePoint(r - biasR, theta)];
+                lines[key] = @(maxRow[theta]);
             }
         }
     }
 
-    [lines sortUsingComparator:^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
-        return [b[@"#"] compare:a[@"#"]];
-    }];
-
-    self.outputImage = [context outputImageProviderFromBufferWithPixelFormat:QCPlugInPixelFormatIf pixelsWide:maxima.width pixelsHigh:maxima.height baseAddress:maxima.data bytesPerRow:maxima.rowBytes releaseCallback:__buffer_release releaseContext:NULL colorSpace:_gray shouldColorMatch:NO];
-
     free(buffer.data);
+    free(maxima.data);
 
-    self.outputStructure = lines;
+    NSMutableDictionary<NSSet<NSValue *> *, NSNumber *> *clusters = [NSMutableDictionary dictionary];
+
+    while ([lines count]) {
+        [clusters addEntriesFromDictionary:cluster(lines)];
+    }
+
+    [lines removeAllObjects];
+
+    for (NSSet *cluster in clusters) {
+        NSUInteger count = cluster.count;
+        vector_double2 centroid = 0;
+
+        for (NSValue *value in cluster) {
+            NSPoint p = value.pointValue;
+            centroid += vector2(p.x, p.y);
+        }
+
+        centroid /= count;
+
+        [lines setObject:clusters[cluster] forKey:[NSValue valueWithPoint:NSMakePoint(centroid.x, centroid.y)]];
+    }
+
+    if (![inputImage lockBufferRepresentationWithPixelFormat:QCPlugInPixelFormatBGRA8 colorSpace:_bgra forBounds:inputImage.imageBounds]) return NO;
+
+    buffer.width    = [inputImage bufferPixelsWide];
+    buffer.height   = [inputImage bufferPixelsHigh];
+    buffer.rowBytes = [inputImage bufferBytesPerRow];
+    buffer.data     = valloc(buffer.height * buffer.rowBytes);
+
+    if (buffer.data == NULL) {
+        [context logMessage:@"Memory allocation failure"];
+        return NO;
+    }
+
+    memcpy(buffer.data, [inputImage bufferBaseAddress], buffer.height * buffer.rowBytes);
+
+    [inputImage unlockBufferRepresentation];
+
+    CGContextRef ctx = CGBitmapContextCreate(buffer.data, buffer.width, buffer.height, 8, buffer.rowBytes, _bgra, kCGBitmapByteOrder32Little|kCGImageAlphaNoneSkipFirst);
+    if (ctx == NULL) {
+        free(buffer.data);
+        [context logMessage:@"CGBitmapContextCreate failed"];
+        return NO;
+    }
+
+    CGContextTranslateCTM(ctx, 0, buffer.height);
+    CGContextScaleCTM(ctx, 1, -1);
+
+    CGContextSetRGBStrokeColor(ctx, 1, 0, 0, 1);
+
+    for (NSValue *line in lines) {
+        if (lines[line].integerValue < 10) continue;
+
+        NSPoint p = line.pointValue;
+
+        CGFloat r = p.x;
+        CGFloat theta = p.y;
+
+        CGPoint p1, p2;
+
+        const CGFloat height = buffer.height;
+        const CGFloat width  = buffer.width;
+
+        findIntercepts(r, theta, width, height, &p1, &p2);
+
+        CGContextMoveToPoint(ctx, p1.x, p1.y);
+        CGContextAddLineToPoint(ctx, p2.x, p2.y);
+    }
+
+    CGContextStrokePath(ctx);
+
+    CGContextRelease(ctx);
+
+    self.outputImage = [context outputImageProviderFromBufferWithPixelFormat:QCPlugInPixelFormatBGRA8 pixelsWide:buffer.width pixelsHigh:buffer.height baseAddress:buffer.data bytesPerRow:buffer.rowBytes releaseCallback:__buffer_release releaseContext:NULL colorSpace:_bgra shouldColorMatch:YES];
+
+    self.outputStructure = nil;
 
     return YES;
 }
