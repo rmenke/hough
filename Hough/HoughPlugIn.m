@@ -21,39 +21,17 @@ void __buffer_release(const void *address, void *context) {
     free((void *)address);
 }
 
-FOUNDATION_STATIC_INLINE
-NSValue *up(NSValue *v) {
-    const NSPoint p = v.pointValue;
-    return [NSValue valueWithPoint:NSMakePoint(p.x, p.y - 1)];
-}
+void clusterPoint(CGFloat x, CGFloat y, NSMutableSet<NSValue *> *set, NSMutableDictionary<NSValue *, NSNumber *> *lines) {
+    NSValue *p = [NSValue valueWithPoint:NSMakePoint(x, y)];
 
-FOUNDATION_STATIC_INLINE
-NSValue *down(NSValue *v) {
-    const NSPoint p = v.pointValue;
-    return [NSValue valueWithPoint:NSMakePoint(p.x, p.y + 1)];
-}
-
-FOUNDATION_STATIC_INLINE
-NSValue *left(NSValue *v) {
-    const NSPoint p = v.pointValue;
-    return [NSValue valueWithPoint:NSMakePoint(p.x - 1, p.y)];
-}
-
-FOUNDATION_STATIC_INLINE
-NSValue *right(NSValue *v) {
-    const NSPoint p = v.pointValue;
-    return [NSValue valueWithPoint:NSMakePoint(p.x + 1, p.y)];
-}
-
-void clusterPoint(NSValue *p, NSMutableSet<NSValue *> *set, NSMutableDictionary<NSValue *, NSNumber *> *lines) {
     if ([lines objectForKey:p]) {
         [lines removeObjectForKey:p];
         [set addObject:p];
 
-        clusterPoint(up(p), set, lines);
-        clusterPoint(down(p), set, lines);
-        clusterPoint(left(p), set, lines);
-        clusterPoint(right(p), set, lines);
+        clusterPoint(x, y - 1, set, lines);
+        clusterPoint(x, y + 1, set, lines);
+        clusterPoint(x - 1, y, set, lines);
+        clusterPoint(x + 1, y, set, lines);
     }
 }
 
@@ -61,16 +39,18 @@ NSDictionary<NSSet<NSValue *> *, NSNumber *> *cluster(NSMutableDictionary<NSValu
     NSValue  *value = [[lines keyEnumerator] nextObject];
     NSNumber *count = lines[value];
 
+    NSPoint p = value.pointValue;
+
     NSMutableSet<NSValue *> *key = [NSMutableSet setWithObject:value];
-    clusterPoint(value, key, lines);
+    clusterPoint(p.x, p.y, key, lines);
 
     return @{key: count};
 }
 
 FOUNDATION_STATIC_INLINE
 void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, const CGFloat height, CGPoint *p1, CGPoint *p2) {
-    CGFloat sin_theta, cos_theta;
-    __sincospi(theta / PER_SEMITURN, &sin_theta, &cos_theta);
+    const CGFloat semiturns = theta / (CGFloat)(PER_SEMITURN);
+    const CGFloat sin_theta = __sinpi(semiturns), cos_theta = __cospi(semiturns);
 
     if (sin_theta == 0.0) {
         CGFloat x = r / cos_theta;
@@ -92,7 +72,7 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
             p1->x = 0; p1->y = y0;
         } else if (0.0 <= x1 && x1 <= width) {
             p1->x = x1; p1->y = height;
-        } else if (0.0 <= y1 && y1 <= height) {
+        } else { // if (0.0 <= y1 && y1 <= height)
             p1->x = width; p1->y = y1;
         }
 
@@ -102,7 +82,7 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
             p2->x = x1; p2->y = height;
         } else if (0.0 <= y0 && y0 <= height) {
             p2->x = 0; p2->y = y0;
-        } else if (0.0 <= x0 && x0 <= width) {
+        } else { // if (0.0 <= x0 && x0 <= width)
             p2->x = x0; p2->y = 0;
         }
     }
@@ -215,10 +195,8 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
             if (*cell <= threshold) {
                 dispatch_group_async(group, queue, ^{
                     for (NSInteger theta = minTheta; theta < maxTheta; ++theta) {
-                        const CGFloat semiturns = theta / (CGFloat)(PER_SEMITURN);
-
-                        CGFloat sin_theta, cos_theta;
-                        __sincospi(semiturns, &sin_theta, &cos_theta);
+                        const CGFloat semiturns = (CGFloat)(theta) / (CGFloat)(PER_SEMITURN);
+                        const CGFloat sin_theta = __sinpi(semiturns), cos_theta = __cospi(semiturns);
 
                         NSInteger r = lround(x * cos_theta + y * sin_theta);
 
