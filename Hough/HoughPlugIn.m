@@ -17,7 +17,19 @@ _Static_assert(sizeof(float) == 4, "floats should be 32-bit");
 #define kQCPlugIn_Name          @"Hough"
 #define kQCPlugIn_Description   @"Perform a Hough transformation on an image."
 
-#define PER_SEMITURN 180
+static const NSInteger kHoughPartsPerSemiturn = 180;
+
+// Hough space is periodic such that the value at
+// (r, ϴ) ≣ ((-1)ⁿ×r, ϴ+nπ) for all r, ϴ, and integers n.  This can be
+// determined by subsitution using the parametric form of the line
+// r = x cos(ϴ) + y sin(ϴ).  Rather than constructing a special
+// variant of the "max" morphological operator that understands this,
+// we simply extend the window of Hough space to include enough
+// duplicate registers to allow the normal "max" operation to work
+// correctly: namely, half the width of the kernel, rounded up. This
+// extra space is called the margin.
+
+static const NSInteger kHoughRasterMargin = 25;
 
 void __buffer_release(const void *address, void *context) {
     free((void *)address);
@@ -51,7 +63,7 @@ NSDictionary<NSSet<NSValue *> *, NSNumber *> *cluster(NSMutableDictionary<NSValu
 
 FOUNDATION_STATIC_INLINE
 void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, const CGFloat height, CGPoint *p1, CGPoint *p2) {
-    const CGFloat semiturns = theta / (CGFloat)(PER_SEMITURN);
+    const CGFloat semiturns = theta / (CGFloat)(kHoughPartsPerSemiturn);
     const CGFloat sin_theta = __sinpi(semiturns), cos_theta = __cospi(semiturns);
 
     if (sin_theta == 0.0) {
@@ -167,10 +179,8 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
 
     NSInteger biasR = ceil(hypot(width, height));
 
-    const NSInteger margin   = 25;
-
-    const NSInteger minTheta = - margin;
-    const NSInteger maxTheta = PER_SEMITURN + margin;
+    const NSInteger minTheta = - kHoughRasterMargin;
+    const NSInteger maxTheta = kHoughPartsPerSemiturn + kHoughRasterMargin;
 
     NSInteger rangeR     = 2 * biasR + 1;
     NSInteger rangeTheta = maxTheta - minTheta;
@@ -197,7 +207,7 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
             if (*cell <= threshold) {
                 dispatch_group_async(group, queue, ^{
                     for (NSInteger theta = minTheta; theta < maxTheta; ++theta) {
-                        const CGFloat semiturns = (CGFloat)(theta) / (CGFloat)(PER_SEMITURN);
+                        const CGFloat semiturns = (CGFloat)(theta) / (CGFloat)(kHoughPartsPerSemiturn);
                         const CGFloat sin_theta = __sinpi(semiturns), cos_theta = __cospi(semiturns);
 
                         NSInteger r = lround(x * cos_theta + y * sin_theta);
@@ -239,17 +249,17 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
 
     vImage_Buffer maxima;
 
-    if ((error = vImageBuffer_Init(&maxima, rangeR, PER_SEMITURN, 32, kvImageNoFlags)) != kvImageNoError) {
+    if ((error = vImageBuffer_Init(&maxima, rangeR, kHoughPartsPerSemiturn, 32, kvImageNoFlags)) != kvImageNoError) {
         [context logMessage:@"vImageBuffer_Init: error = %zd", error];
         free(buffer.data);
         return NO;
     }
 
-    NSUInteger kernelSize = margin * 2 - 1;
+    NSUInteger kernelSize = kHoughRasterMargin * 2 - 1;
     float kernel[kernelSize * kernelSize];
     memset(kernel, 0, sizeof(kernel));
 
-    if ((error = vImageDilate_PlanarF(&buffer, &maxima, margin, 0, kernel, kernelSize, kernelSize, kvImageNoFlags)) != kvImageNoError) {
+    if ((error = vImageDilate_PlanarF(&buffer, &maxima, kHoughRasterMargin, 0, kernel, kernelSize, kernelSize, kvImageNoFlags)) != kvImageNoError) {
         [context logMessage:@"vImageDilate_PlanarF: error = %zd", error];
         free(maxima.data);
         free(buffer.data);
@@ -262,7 +272,7 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
         float * const srcRow = buffer.data + buffer.rowBytes * r;
         float * const maxRow = maxima.data + maxima.rowBytes * r;
 
-        for (NSInteger theta = 0; theta < PER_SEMITURN; ++theta) {
+        for (NSInteger theta = 0; theta < kHoughPartsPerSemiturn; ++theta) {
             CGPoint p1, p2;
             findIntercepts(r, theta, width, height, &p1, &p2);
             CGFloat length = hypot(p1.x - p2.x, p1.y - p2.y);
