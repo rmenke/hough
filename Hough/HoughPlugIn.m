@@ -256,11 +256,9 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
     }
 
     NSUInteger kernelSize = kHoughRasterMargin * 2 - 1;
-    float kernel[kernelSize * kernelSize];
-    memset(kernel, 0, sizeof(kernel));
 
-    if ((error = vImageDilate_PlanarF(&buffer, &maxima, kHoughRasterMargin, 0, kernel, kernelSize, kernelSize, kvImageNoFlags)) != kvImageNoError) {
-        [context logMessage:@"vImageDilate_PlanarF: error = %zd", error];
+    if ((error = vImageMax_PlanarF(&buffer, &maxima, NULL, kHoughRasterMargin, 0, kernelSize, kernelSize, kvImageNoFlags)) != kvImageNoError) {
+        [context logMessage:@"vImageMax_PlanarF: error = %zd", error];
         free(maxima.data);
         free(buffer.data);
         return NO;
