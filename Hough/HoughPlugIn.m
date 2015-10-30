@@ -12,6 +12,8 @@
 @import Accelerate;
 @import simd;
 
+_Static_assert(sizeof(float) == 4, "floats should be 32-bit");
+
 #define kQCPlugIn_Name          @"Hough"
 #define kQCPlugIn_Description   @"Perform a Hough transformation on an image."
 
@@ -228,9 +230,9 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
     [inputImage unlockBufferRepresentation];
 
     dispatch_apply(rangeR, queue, ^(size_t r) {
-        Float32 * const row = buffer.data + buffer.rowBytes * r;
+        float * const row = buffer.data + buffer.rowBytes * r;
         for (NSInteger theta = 0; theta < rangeTheta; ++theta) {
-            Float32 * const cell = row + theta;
+            float * const cell = row + theta;
             *cell = *(int32_t *)(cell);
         }
     });
@@ -257,8 +259,8 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
     NSMutableDictionary<NSValue *, NSNumber *> *lines = [NSMutableDictionary dictionary];
 
     for (NSInteger r = 0; r < rangeR; ++r) {
-        Float32 * const srcRow = buffer.data + buffer.rowBytes * r;
-        Float32 * const maxRow = maxima.data + maxima.rowBytes * r;
+        float * const srcRow = buffer.data + buffer.rowBytes * r;
+        float * const maxRow = maxima.data + maxima.rowBytes * r;
 
         for (NSInteger theta = 0; theta < PER_SEMITURN; ++theta) {
             CGPoint p1, p2;
