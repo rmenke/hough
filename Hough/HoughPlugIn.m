@@ -177,18 +177,15 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
 
     if (width == 0 || height == 0) return NO;
 
+    // r ∈ [-biasR, biasR]
     NSInteger biasR = ceil(hypot(width, height));
 
-    const NSInteger minTheta = - kHoughRasterMargin;
-    const NSInteger maxTheta = kHoughPartsPerSemiturn + kHoughRasterMargin;
-
-    NSInteger rangeR     = 2 * biasR + 1;
-    NSInteger rangeTheta = maxTheta - minTheta;
+    const NSUInteger bufferWidth = kHoughPartsPerSemiturn + 2 * kHoughRasterMargin;
 
     vImage_Buffer buffer;
     vImage_Error error;
 
-    if ((error = vImageBuffer_Init(&buffer, rangeR, rangeTheta, 32, kvImageNoFlags)) != kvImageNoError) {
+    if ((error = vImageBuffer_Init(&buffer, 2 * biasR + 1, bufferWidth, 32, kvImageNoFlags)) != kvImageNoError) {
         [context logMessage:@"vImageBuffer_Init: error = %zd", error];
         return NO;
     }
@@ -206,15 +203,14 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
             float *cell = row + x;
             if (*cell <= threshold) {
                 dispatch_group_async(group, queue, ^{
-                    for (NSInteger theta = minTheta; theta < maxTheta; ++theta) {
-                        const CGFloat semiturns = (CGFloat)(theta) / (CGFloat)(kHoughPartsPerSemiturn);
+                    for (NSInteger theta = 0; theta < bufferWidth; ++theta) {
+                        const CGFloat semiturns = (CGFloat)(theta - kHoughRasterMargin) / (CGFloat)(kHoughPartsPerSemiturn);
                         const CGFloat sin_theta = __sinpi(semiturns), cos_theta = __cospi(semiturns);
 
                         NSInteger r = lround(x * cos_theta + y * sin_theta);
 
                         if (r >= -biasR && r <= +biasR) {
-                            volatile int32_t *cell = buffer.data + (buffer.rowBytes * (r + biasR));
-                            cell += theta - minTheta;
+                            volatile int32_t *cell = buffer.data + (buffer.rowBytes * (r + biasR)) + (theta * sizeof(int32_t));
                             int32_t count = OSAtomicIncrement32(cell);
                             BOOL done = NO;
                             do {
@@ -239,9 +235,9 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
 
     [inputImage unlockBufferRepresentation];
 
-    dispatch_apply(rangeR, queue, ^(size_t r) {
+    dispatch_apply(buffer.height, queue, ^(size_t r) {
         float * const row = buffer.data + buffer.rowBytes * r;
-        for (NSInteger theta = 0; theta < rangeTheta; ++theta) {
+        for (NSInteger theta = 0; theta < bufferWidth; ++theta) {
             float * const cell = row + theta;
             *cell = *(int32_t *)(cell);
         }
@@ -249,7 +245,7 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
 
     vImage_Buffer maxima;
 
-    if ((error = vImageBuffer_Init(&maxima, rangeR, kHoughPartsPerSemiturn, 32, kvImageNoFlags)) != kvImageNoError) {
+    if ((error = vImageBuffer_Init(&maxima, buffer.height, kHoughPartsPerSemiturn, 32, kvImageNoFlags)) != kvImageNoError) {
         [context logMessage:@"vImageBuffer_Init: error = %zd", error];
         free(buffer.data);
         return NO;
@@ -266,16 +262,16 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
 
     NSMutableDictionary<NSValue *, NSNumber *> *lines = [NSMutableDictionary dictionary];
 
-    for (NSInteger r = 0; r < rangeR; ++r) {
-        float * const srcRow = buffer.data + buffer.rowBytes * r;
-        float * const maxRow = maxima.data + maxima.rowBytes * r;
+    for (NSInteger r = 0; r < buffer.height; ++r) {
+        float * const srcRow = buffer.data + (buffer.rowBytes * r) + (kHoughRasterMargin * sizeof(float));
+        float * const maxRow = maxima.data + (maxima.rowBytes * r);
 
         for (NSInteger theta = 0; theta < kHoughPartsPerSemiturn; ++theta) {
             CGPoint p1, p2;
             findIntercepts(r, theta, width, height, &p1, &p2);
             CGFloat length = hypot(p1.x - p2.x, p1.y - p2.y);
 
-            if (srcRow[theta - minTheta] == maxRow[theta] && maxRow[theta] > (0.8 * length)) {
+            if (srcRow[theta] == maxRow[theta] && maxRow[theta] > (0.8 * length)) {
                 NSValue *key = [NSValue valueWithPoint:NSMakePoint(r - biasR, theta)];
                 lines[key] = @(maxRow[theta]);
             }
