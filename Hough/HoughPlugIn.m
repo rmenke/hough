@@ -17,7 +17,9 @@ _Static_assert(sizeof(float) == 4, "floats should be 32-bit");
 #define kQCPlugIn_Name          @"Hough"
 #define kQCPlugIn_Description   @"Perform a Hough transformation on an image."
 
-static const NSInteger kHoughPartsPerSemiturn = 180;
+#define QCLog(...) [context logMessage:__VA_ARGS__]
+
+static const NSInteger kHoughPartsPerSemiturn = 256;
 
 // Hough space is periodic such that the value at
 // (r, ϴ) ≣ ((-1)ⁿ×r, ϴ+nπ) for all r, ϴ, and integers n.  This can be
@@ -141,10 +143,16 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
 
 - (BOOL)startExecution:(id<QCPlugInContext>)context {
     _gray = CGColorSpaceCreateWithName(kCGColorSpaceGenericGray);
-    if (!_gray) return NO;
+    if (!_gray) {
+        QCLog(@"Could not create color space %@", kCGColorSpaceGenericGray);
+        return NO;
+    }
 
     _bgra = CGColorSpaceCreateWithName(kCGColorSpaceGenericRGB);
-    if (!_bgra) return NO;
+    if (!_bgra) {
+        QCLog(@"Could not create color space %@", kCGColorSpaceGenericRGB);
+        return NO;
+    }
 
     return YES;
 }
@@ -186,7 +194,7 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
     vImage_Error error;
 
     if ((error = vImageBuffer_Init(&buffer, 2 * biasR + 1, bufferWidth, 32, kvImageNoFlags)) != kvImageNoError) {
-        [context logMessage:@"vImageBuffer_Init: error = %zd", error];
+        QCLog(@"vImageBuffer_Init: error = %zd", error);
         return NO;
     }
 
@@ -246,7 +254,7 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
     vImage_Buffer maxima;
 
     if ((error = vImageBuffer_Init(&maxima, buffer.height, kHoughPartsPerSemiturn, 32, kvImageNoFlags)) != kvImageNoError) {
-        [context logMessage:@"vImageBuffer_Init: error = %zd", error];
+        QCLog(@"vImageBuffer_Init: error = %zd", error);
         free(buffer.data);
         return NO;
     }
@@ -254,7 +262,7 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
     NSUInteger kernelSize = kHoughRasterMargin * 2 - 1;
 
     if ((error = vImageMax_PlanarF(&buffer, &maxima, NULL, kHoughRasterMargin, 0, kernelSize, kernelSize, kvImageNoFlags)) != kvImageNoError) {
-        [context logMessage:@"vImageMax_PlanarF: error = %zd", error];
+        QCLog(@"vImageMax_PlanarF: error = %zd", error);
         free(maxima.data);
         free(buffer.data);
         return NO;
@@ -311,7 +319,7 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
     buffer.data     = valloc(buffer.height * buffer.rowBytes);
 
     if (buffer.data == NULL) {
-        [context logMessage:@"Memory allocation failure"];
+        QCLog(@"Memory allocation failure");
         return NO;
     }
 
@@ -322,7 +330,7 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
     CGContextRef ctx = CGBitmapContextCreate(buffer.data, buffer.width, buffer.height, 8, buffer.rowBytes, _bgra, kCGBitmapByteOrder32Little|kCGImageAlphaNoneSkipFirst);
     if (ctx == NULL) {
         free(buffer.data);
-        [context logMessage:@"CGBitmapContextCreate failed"];
+        QCLog(@"CGBitmapContextCreate failed");
         return NO;
     }
 
