@@ -6,7 +6,7 @@
 //  Copyright (c) 2015 Rob Menke. All rights reserved.
 //
 
-#import <Quartz/Quartz.h>
+@import Quartz;
 
 @interface HoughPlugIn : QCPlugIn
 

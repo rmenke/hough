@@ -7,6 +7,7 @@
 //
 
 #import "HoughPlugIn.h"
+#import "HoughUtility.h"
 
 @import Darwin.C.tgmath;
 @import Accelerate;
@@ -19,6 +20,8 @@ _Static_assert(sizeof(float) == 4, "floats should be 32-bit");
 
 #define QCLog(...) [context logMessage:__VA_ARGS__]
 
+// The following uses a power-of-two to make life easier for _sinpi()
+// and friends.  N/256 is always exact in floating point.
 static const NSInteger kHoughPartsPerSemiturn = 256;
 
 // Hough space is periodic such that the value at
@@ -37,30 +40,8 @@ void __buffer_release(const void *address, void *context) {
     free((void *)address);
 }
 
-void clusterPoint(CGFloat x, CGFloat y, NSMutableSet<NSValue *> *set, NSMutableDictionary<NSValue *, NSNumber *> *lines) {
-    NSValue *p = [NSValue valueWithPoint:NSMakePoint(x, y)];
-
-    if ([lines objectForKey:p]) {
-        [lines removeObjectForKey:p];
-        [set addObject:p];
-
-        clusterPoint(x, y - 1, set, lines);
-        clusterPoint(x, y + 1, set, lines);
-        clusterPoint(x - 1, y, set, lines);
-        clusterPoint(x + 1, y, set, lines);
-    }
-}
-
-NSDictionary<NSSet<NSValue *> *, NSNumber *> *cluster(NSMutableDictionary<NSValue *, NSNumber *> *lines) {
-    NSValue  *value = [[lines keyEnumerator] nextObject];
-    NSNumber *count = lines[value];
-
-    NSPoint p = value.pointValue;
-
-    NSMutableSet<NSValue *> *key = [NSMutableSet setWithObject:value];
-    clusterPoint(p.x, p.y, key, lines);
-
-    return @{key: count};
+static inline NSPoint NSPointFromVector(vector_double2 v) {
+    return NSMakePoint(v.x, v.y);
 }
 
 FOUNDATION_STATIC_INLINE
@@ -275,41 +256,17 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
         float * const maxRow = maxima.data + (maxima.rowBytes * r);
 
         for (NSInteger theta = 0; theta < kHoughPartsPerSemiturn; ++theta) {
-            CGPoint p1, p2;
-            findIntercepts(r, theta, width, height, &p1, &p2);
-            CGFloat length = hypot(p1.x - p2.x, p1.y - p2.y);
-
-            if (srcRow[theta] == maxRow[theta] && maxRow[theta] > (0.8 * length)) {
-                NSValue *key = [NSValue valueWithPoint:NSMakePoint(r - biasR, theta)];
-                lines[key] = @(maxRow[theta]);
+            float value = maxRow[theta];
+            if (srcRow[theta] == value && value > 10.0) {
+                vector_double2 cluster = clusterCenter(context, &maxima, r, theta, maxRow[theta]);
+                NSValue *key = [NSValue valueWithPoint:NSPointFromVector(cluster)];
+                lines[key] = @(value);
             }
         }
     }
 
     free(buffer.data);
     free(maxima.data);
-
-    NSMutableDictionary<NSSet<NSValue *> *, NSNumber *> *clusters = [NSMutableDictionary dictionary];
-
-    while ([lines count]) {
-        [clusters addEntriesFromDictionary:cluster(lines)];
-    }
-
-    [lines removeAllObjects];
-
-    for (NSSet *cluster in clusters) {
-        NSUInteger count = cluster.count;
-        vector_double2 centroid = 0;
-
-        for (NSValue *value in cluster) {
-            NSPoint p = value.pointValue;
-            centroid += vector2(p.x, p.y);
-        }
-
-        centroid /= count;
-
-        [lines setObject:clusters[cluster] forKey:[NSValue valueWithPoint:NSMakePoint(centroid.x, centroid.y)]];
-    }
 
     if (![inputImage lockBufferRepresentationWithPixelFormat:QCPlugInPixelFormatBGRA8 colorSpace:_bgra forBounds:inputImage.imageBounds]) return NO;
 

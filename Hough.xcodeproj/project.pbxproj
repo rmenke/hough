@@ -7,12 +7,34 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AEAC79971BE81BBB003B012E /* HoughTest.m in Sources */ = {isa = PBXBuildFile; fileRef = AEAC79961BE81BBB003B012E /* HoughTest.m */; };
+		AEAC799F1BE828FB003B012E /* Hough.plugin in CopyFiles */ = {isa = PBXBuildFile; fileRef = E1CAC0F41B7FF0E300D4EA94 /* Hough.plugin */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AEAC79A21BE84211003B012E /* HoughUtility.m in Sources */ = {isa = PBXBuildFile; fileRef = AEAC79A01BE84211003B012E /* HoughUtility.m */; settings = {ASSET_TAGS = (); }; };
+		AEAC79A31BE84230003B012E /* HoughUtility.m in Sources */ = {isa = PBXBuildFile; fileRef = AEAC79A01BE84211003B012E /* HoughUtility.m */; settings = {ASSET_TAGS = (); }; };
 		E1CAC0FB1B7FF0E300D4EA94 /* HoughPlugIn.m in Sources */ = {isa = PBXBuildFile; fileRef = E1CAC0FA1B7FF0E300D4EA94 /* HoughPlugIn.m */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		AEAC799E1BE828F4003B012E /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				AEAC799F1BE828FB003B012E /* Hough.plugin in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		AE46AFA21BA0E161004A2008 /* Test Hough.qtz */ = {isa = PBXFileReference; lastKnownFileType = "video.quartz-composer"; path = "Test Hough.qtz"; sourceTree = "<group>"; };
 		AE46AFA31BA0E17A004A2008 /* Sample-1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Sample-1.png"; sourceTree = "<group>"; };
+		AEAC79941BE81BBB003B012E /* HoughTest.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HoughTest.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AEAC79961BE81BBB003B012E /* HoughTest.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = HoughTest.m; sourceTree = "<group>"; };
+		AEAC79981BE81BBB003B012E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AEAC79A01BE84211003B012E /* HoughUtility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HoughUtility.m; sourceTree = "<group>"; };
+		AEAC79A11BE84211003B012E /* HoughUtility.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HoughUtility.h; sourceTree = "<group>"; };
 		E19628691BA3CD02006598B0 /* Sample-2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Sample-2.png"; sourceTree = "<group>"; };
 		E1CAC0F41B7FF0E300D4EA94 /* Hough.plugin */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Hough.plugin; sourceTree = BUILT_PRODUCTS_DIR; };
 		E1CAC0F81B7FF0E300D4EA94 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -22,6 +44,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		AEAC79911BE81BBB003B012E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E1CAC0F01B7FF0E300D4EA94 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -43,10 +72,20 @@
 			name = "Other Resources";
 			sourceTree = "<group>";
 		};
+		AEAC79951BE81BBB003B012E /* HoughTest */ = {
+			isa = PBXGroup;
+			children = (
+				AEAC79961BE81BBB003B012E /* HoughTest.m */,
+				AEAC79981BE81BBB003B012E /* Info.plist */,
+			);
+			path = HoughTest;
+			sourceTree = "<group>";
+		};
 		E1CAC0EA1B7FF0E300D4EA94 = {
 			isa = PBXGroup;
 			children = (
 				E1CAC0F61B7FF0E300D4EA94 /* Hough */,
+				AEAC79951BE81BBB003B012E /* HoughTest */,
 				AE46AFA11BA0E14E004A2008 /* Other Resources */,
 				E1CAC0F51B7FF0E300D4EA94 /* Products */,
 			);
@@ -56,6 +95,7 @@
 			isa = PBXGroup;
 			children = (
 				E1CAC0F41B7FF0E300D4EA94 /* Hough.plugin */,
+				AEAC79941BE81BBB003B012E /* HoughTest.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -65,6 +105,8 @@
 			children = (
 				E1CAC0F91B7FF0E300D4EA94 /* HoughPlugIn.h */,
 				E1CAC0FA1B7FF0E300D4EA94 /* HoughPlugIn.m */,
+				AEAC79A11BE84211003B012E /* HoughUtility.h */,
+				AEAC79A01BE84211003B012E /* HoughUtility.m */,
 				E1CAC0F71B7FF0E300D4EA94 /* Supporting Files */,
 			);
 			path = Hough;
@@ -81,6 +123,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		AEAC79931BE81BBB003B012E /* HoughTest */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AEAC799B1BE81BBB003B012E /* Build configuration list for PBXNativeTarget "HoughTest" */;
+			buildPhases = (
+				AEAC79901BE81BBB003B012E /* Sources */,
+				AEAC79911BE81BBB003B012E /* Frameworks */,
+				AEAC799E1BE828F4003B012E /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HoughTest;
+			productName = HoughTest;
+			productReference = AEAC79941BE81BBB003B012E /* HoughTest.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		E1CAC0F31B7FF0E300D4EA94 /* Hough */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = E1CAC0FE1B7FF0E300D4EA94 /* Build configuration list for PBXNativeTarget "Hough" */;
@@ -108,6 +167,9 @@
 				LastUpgradeCheck = 0700;
 				ORGANIZATIONNAME = "Rob Menke";
 				TargetAttributes = {
+					AEAC79931BE81BBB003B012E = {
+						CreatedOnToolsVersion = 7.0.1;
+					};
 					E1CAC0F31B7FF0E300D4EA94 = {
 						CreatedOnToolsVersion = 6.4;
 					};
@@ -126,6 +188,7 @@
 			projectRoot = "";
 			targets = (
 				E1CAC0F31B7FF0E300D4EA94 /* Hough */,
+				AEAC79931BE81BBB003B012E /* HoughTest */,
 			);
 		};
 /* End PBXProject section */
@@ -158,10 +221,20 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		AEAC79901BE81BBB003B012E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AEAC79A31BE84230003B012E /* HoughUtility.m in Sources */,
+				AEAC79971BE81BBB003B012E /* HoughTest.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E1CAC0EF1B7FF0E300D4EA94 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AEAC79A21BE84211003B012E /* HoughUtility.m in Sources */,
 				E1CAC0FB1B7FF0E300D4EA94 /* HoughPlugIn.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -169,6 +242,28 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		AEAC79991BE81BBB003B012E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = HoughTest/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.the-wabe.HoughTest";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		AEAC799A1BE81BBB003B012E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = HoughTest/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.the-wabe.HoughTest";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		E1CAC0FC1B7FF0E300D4EA94 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -274,6 +369,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		AEAC799B1BE81BBB003B012E /* Build configuration list for PBXNativeTarget "HoughTest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AEAC79991BE81BBB003B012E /* Debug */,
+				AEAC799A1BE81BBB003B012E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		E1CAC0EE1B7FF0E300D4EA94 /* Build configuration list for PBXProject "Hough" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
