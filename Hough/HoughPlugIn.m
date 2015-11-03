@@ -41,8 +41,7 @@ void __buffer_release(const void *address, void *context) {
 }
 
 FOUNDATION_STATIC_INLINE
-void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, const CGFloat height, CGPoint *p1, CGPoint *p2) {
-    const CGFloat semiturns = theta / (CGFloat)(kHoughPartsPerSemiturn);
+void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat width, const CGFloat height, CGPoint *p1, CGPoint *p2) {
     const CGFloat sin_theta = __sinpi(semiturns), cos_theta = __cospi(semiturns);
 
     if (sin_theta == 0.0) {
@@ -247,6 +246,10 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
 
     NSMutableDictionary<NSValue *, NSNumber *> *lines = [NSMutableDictionary dictionary];
 
+    // The coordinate translation in the buffer.
+    const vector_double2 offset = { biasR, kHoughRasterMargin };
+    const vector_double2 scale  = { 1.0, kHoughPartsPerSemiturn };
+
     for (NSInteger r = 0; r < buffer.height; ++r) {
         float * const srcRow = buffer.data + (buffer.rowBytes * r) + (kHoughRasterMargin * sizeof(float));
         float * const maxRow = maxima.data + (maxima.rowBytes * r);
@@ -255,7 +258,16 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
             const float value = srcRow[theta];
             if (maxRow[theta] == value && value > 10.0) {
                 vector_double2 cluster = clusterCenter(context, &buffer, r, theta + kHoughRasterMargin, value);
-                NSValue *key = [NSValue valueWithPoint:NSMakePoint(cluster.x - biasR, cluster.y - kHoughRasterMargin)];
+                cluster -= offset;
+                cluster /= scale;
+                while (cluster.y >= 1.0) {
+                    cluster.y -= 2.0;
+                }
+                while (cluster.y < 0.0) {
+                    cluster.x = -cluster.x; cluster.y += 1.0;
+                }
+                NSAssert(0 <= cluster.y && cluster.y < 1.0, @"cluster.y ∈ [0, 1)");
+                NSValue *key = [NSValue valueWithPoint:NSMakePoint(cluster.x, cluster.y)];
                 lines[key] = @(value);
             }
         }
@@ -298,14 +310,14 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
         NSPoint p = line.pointValue;
 
         CGFloat r = p.x;
-        CGFloat theta = p.y;
+        CGFloat semiturns = p.y;
 
         CGPoint p1, p2;
 
         const CGFloat height = buffer.height;
         const CGFloat width  = buffer.width;
 
-        findIntercepts(r, theta, width, height, &p1, &p2);
+        findIntercepts(r, semiturns, width, height, &p1, &p2);
 
         CGContextMoveToPoint(ctx, p1.x, p1.y);
         CGContextAddLineToPoint(ctx, p2.x, p2.y);
@@ -317,7 +329,7 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
 
     self.outputImage = [context outputImageProviderFromBufferWithPixelFormat:QCPlugInPixelFormatBGRA8 pixelsWide:buffer.width pixelsHigh:buffer.height baseAddress:buffer.data bytesPerRow:buffer.rowBytes releaseCallback:__buffer_release releaseContext:NULL colorSpace:_bgra shouldColorMatch:YES];
 
-    self.outputStructure = nil;
+    self.outputStructure = lines;
 
     return YES;
 }
