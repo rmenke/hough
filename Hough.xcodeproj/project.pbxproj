@@ -9,10 +9,20 @@
 /* Begin PBXBuildFile section */
 		AEAC79971BE81BBB003B012E /* HoughTest.m in Sources */ = {isa = PBXBuildFile; fileRef = AEAC79961BE81BBB003B012E /* HoughTest.m */; };
 		AEAC799F1BE828FB003B012E /* Hough.plugin in CopyFiles */ = {isa = PBXBuildFile; fileRef = E1CAC0F41B7FF0E300D4EA94 /* Hough.plugin */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		AEAC79A21BE84211003B012E /* HoughUtility.m in Sources */ = {isa = PBXBuildFile; fileRef = AEAC79A01BE84211003B012E /* HoughUtility.m */; settings = {ASSET_TAGS = (); }; };
-		AEAC79A31BE84230003B012E /* HoughUtility.m in Sources */ = {isa = PBXBuildFile; fileRef = AEAC79A01BE84211003B012E /* HoughUtility.m */; settings = {ASSET_TAGS = (); }; };
+		AEAC79A21BE84211003B012E /* HoughUtility.m in Sources */ = {isa = PBXBuildFile; fileRef = AEAC79A01BE84211003B012E /* HoughUtility.m */; };
+		AEAC79A31BE84230003B012E /* HoughUtility.m in Sources */ = {isa = PBXBuildFile; fileRef = AEAC79A01BE84211003B012E /* HoughUtility.m */; };
 		E1CAC0FB1B7FF0E300D4EA94 /* HoughPlugIn.m in Sources */ = {isa = PBXBuildFile; fileRef = E1CAC0FA1B7FF0E300D4EA94 /* HoughPlugIn.m */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E141AD131BE8797D00F06EB0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E1CAC0EB1B7FF0E300D4EA94 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E1CAC0F31B7FF0E300D4EA94;
+			remoteInfo = Hough;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		AEAC799E1BE828F4003B012E /* CopyFiles */ = {
@@ -134,6 +144,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				E141AD141BE8797D00F06EB0 /* PBXTargetDependency */,
 			);
 			name = HoughTest;
 			productName = HoughTest;
@@ -164,7 +175,7 @@
 		E1CAC0EB1B7FF0E300D4EA94 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0700;
+				LastUpgradeCheck = 0710;
 				ORGANIZATIONNAME = "Rob Menke";
 				TargetAttributes = {
 					AEAC79931BE81BBB003B012E = {
@@ -240,6 +251,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E141AD141BE8797D00F06EB0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E1CAC0F31B7FF0E300D4EA94 /* Hough */;
+			targetProxy = E141AD131BE8797D00F06EB0 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		AEAC79991BE81BBB003B012E /* Debug */ = {
