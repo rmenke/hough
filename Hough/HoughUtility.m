@@ -14,8 +14,6 @@ vector_double2 clusterCenter(id<QCPlugInContext> context, vImage_Buffer *buffer,
 
     float *srcRow = buffer->data + buffer->rowBytes * r;
 
-    BOOL done = NO;
-
     do {
         NSCAssert(r < buffer->height, @"r ∈ [0, height)");
         NSCAssert(t < buffer->width, @"t ∈ [0, width)");
@@ -28,7 +26,8 @@ vector_double2 clusterCenter(id<QCPlugInContext> context, vImage_Buffer *buffer,
 
         for (t = start; t < end; ++t) {
             srcRow[t] = 0.0;
-            centroid += vector2((double)r, (double)t);
+            centroid.x += r;
+            centroid.y += t;
             ++pixelCount;
         }
 
@@ -40,9 +39,9 @@ vector_double2 clusterCenter(id<QCPlugInContext> context, vImage_Buffer *buffer,
             for (t = start; t > 0 && srcRow[t-1] == value; --t);
         } else {
             for (t = start + 1; t < end && srcRow[t] != value; ++t);
-            done = (t == end);
+            if (t == end) break;
         }
-    } while (!done);
+    } while (true);
 
     return centroid / (double)(pixelCount);
 }
