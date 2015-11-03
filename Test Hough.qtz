@@ -1641,6 +1641,14 @@
 		V2KuxV2KuxV2KuxV2Kv/2Q==
 		</data>
 	</dict>
+	<key>portAttributes</key>
+	<dict>
+		<key>Image</key>
+		<dict>
+			<key>name</key>
+			<string>Image</string>
+		</dict>
+	</dict>
 	<key>rootPatch</key>
 	<dict>
 		<key>class</key>
@@ -1720,19 +1728,6 @@
 					<dict>
 						<key>CIRendering</key>
 						<false/>
-						<key>customInputPortStates</key>
-						<dict>
-							<key>inputHeight</key>
-							<dict>
-								<key>value</key>
-								<real>0.5</real>
-							</dict>
-							<key>inputWidth</key>
-							<dict>
-								<key>value</key>
-								<real>0.5</real>
-							</dict>
-						</dict>
 						<key>ivarInputPortStates</key>
 						<dict>
 							<key>inputBlending</key>
@@ -1780,7 +1775,7 @@
 						<key>pixelAligned</key>
 						<real>1</real>
 						<key>sizeMode</key>
-						<string>custom</string>
+						<string>real</string>
 						<key>systemInputPortStates</key>
 						<dict>
 							<key>_enable</key>
@@ -1797,7 +1792,7 @@
 						U09iamVjdACFhAFpAZKEhIQITlNT
 						dHJpbmcBlYQBKwhwb3NpdGlvboaS
 						hISEB05TVmFsdWUAlYQBKoSEDHtD
-						R1BvaW50PWRkfZuBkgGBAQGGhg==
+						R1BvaW50PWRkfZuBkgGBGQGGhg==
 						</data>
 						<key>version</key>
 						<integer>4</integer>
@@ -1842,6 +1837,18 @@
 					<string>PlugInPatch_HoughPlugIn_1</string>
 					<key>port</key>
 					<string>inputImage</string>
+					<key>state</key>
+					<dict>
+						<key>userInfo</key>
+						<data>
+						BAtzdHJlYW10eXBlZIHoA4QBQISE
+						hBNOU011dGFibGVEaWN0aW9uYXJ5
+						AISEDE5TRGljdGlvbmFyeQCEhAhO
+						U09iamVjdACFhAFpAZKEhIQITlNT
+						dHJpbmcBlYQBKwRuYW1lhpKEl5gF
+						SW1hZ2WGhg==
+						</data>
+					</dict>
 				</dict>
 			</array>
 			<key>userInfo</key>

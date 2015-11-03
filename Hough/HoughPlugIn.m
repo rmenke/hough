@@ -40,10 +40,6 @@ void __buffer_release(const void *address, void *context) {
     free((void *)address);
 }
 
-static inline NSPoint NSPointFromVector(vector_double2 v) {
-    return NSMakePoint(v.x, v.y);
-}
-
 FOUNDATION_STATIC_INLINE
 void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, const CGFloat height, CGPoint *p1, CGPoint *p2) {
     const CGFloat semiturns = theta / (CGFloat)(kHoughPartsPerSemiturn);
@@ -256,10 +252,10 @@ void findIntercepts(const CGFloat r, const CGFloat theta, const CGFloat width, c
         float * const maxRow = maxima.data + (maxima.rowBytes * r);
 
         for (NSInteger theta = 0; theta < kHoughPartsPerSemiturn; ++theta) {
-            float value = maxRow[theta];
-            if (srcRow[theta] == value && value > 10.0) {
-                vector_double2 cluster = clusterCenter(context, &maxima, r, theta, maxRow[theta]);
-                NSValue *key = [NSValue valueWithPoint:NSPointFromVector(cluster)];
+            const float value = srcRow[theta];
+            if (maxRow[theta] == value && value > 10.0) {
+                vector_double2 cluster = clusterCenter(context, &buffer, r, theta + kHoughRasterMargin, value);
+                NSValue *key = [NSValue valueWithPoint:NSMakePoint(cluster.x - biasR, cluster.y - kHoughRasterMargin)];
                 lines[key] = @(value);
             }
         }
