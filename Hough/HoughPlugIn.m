@@ -18,6 +18,9 @@ _Static_assert(sizeof(float) == 4, "floats should be 32-bit");
 #define kQCPlugIn_Name          @"Hough"
 #define kQCPlugIn_Description   @"Perform a Hough transformation on an image."
 
+#define R @"R"
+#define T @"θ"
+
 #define QCLog(...) [context logMessage:__VA_ARGS__]
 
 // The following uses a power-of-two to make life easier for _sinpi()
@@ -33,8 +36,11 @@ static const NSInteger kHoughPartsPerSemiturn = 256;
 // duplicate registers to allow the normal "max" operation to work
 // correctly: namely, half the width of the kernel, rounded up. This
 // extra space is called the margin.
-
 static const NSInteger kHoughRasterMargin = 25;
+
+// How many parts (as defined by kHoughPartsPerSemiturn) may a line be
+// off from straight vertical or horizontal yet still be considered.
+static const NSInteger kHoughAllowableSlant = 2;
 
 void __buffer_release(const void *address, void *context) {
     free((void *)address);
@@ -244,7 +250,7 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
         return NO;
     }
 
-    NSMutableDictionary<NSValue *, NSNumber *> *lines = [NSMutableDictionary dictionary];
+    NSMutableArray<NSDictionary<NSString *, NSNumber *> *> *lines = [NSMutableArray array];
 
     // The coordinate translation in the buffer.
     const vector_double2 offset = { biasR, kHoughRasterMargin };
@@ -267,11 +273,19 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
                     cluster.x = -cluster.x; cluster.y += 1.0;
                 }
                 NSAssert(0 <= cluster.y && cluster.y < 1.0, @"cluster.y ∈ [0, 1)");
-                NSValue *key = [NSValue valueWithPoint:NSMakePoint(cluster.x, cluster.y)];
-                lines[key] = @(value);
+                [lines addObject:@{R:@(cluster.x), T:@(cluster.y)}];
             }
         }
     }
+
+    [lines filterUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSDictionary<NSString *, NSNumber *> * _Nonnull line, NSDictionary<NSString *, id> * _Nullable bindings) {
+        const CGFloat theta = line[T].doubleValue;
+
+        // 'slant' measures the number of semiturns the line is off from the nearest vertical or horizontal.
+        const CGFloat slant = fabs(fmod(theta + 0.25, 0.5) - 0.25);
+
+        return slant <= (kHoughAllowableSlant / kHoughPartsPerSemiturn);
+    }]];
 
     free(buffer.data);
     free(maxima.data);
@@ -304,13 +318,9 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
 
     CGContextSetRGBStrokeColor(ctx, 1, 0, 0, 1);
 
-    for (NSValue *line in lines) {
-        if (lines[line].integerValue < 10) continue;
-
-        NSPoint p = line.pointValue;
-
-        CGFloat r = p.x;
-        CGFloat semiturns = p.y;
+    for (NSDictionary<NSString *, NSNumber *> *line in lines) {
+        CGFloat r = line[R].doubleValue;
+        CGFloat semiturns = line[T].doubleValue;
 
         CGPoint p1, p2;
 

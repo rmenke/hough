@@ -14,6 +14,6 @@
 @property (readonly) CGFloat inputThreshold;
 
 @property (retain) id<QCPlugInOutputImageProvider> outputImage;
-@property (retain) NSDictionary *outputStructure;
+@property (retain) NSArray *outputStructure;
 
 @end
