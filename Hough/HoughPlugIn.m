@@ -23,23 +23,31 @@ _Static_assert(sizeof(float) == 4, "floats should be 32-bit");
 
 #define QCLog(...) [context logMessage:__VA_ARGS__]
 
-// The following uses a power-of-two to make life easier for _sinpi()
-// and friends.  N/256 is always exact in floating point.
+/*!
+ * The following uses a power-of-two to make life easier for
+ * <code>_sinpi()</code> and friends.  N/256 is always exact in
+ * floating point.
+ */
 static const NSInteger kHoughPartsPerSemiturn = 256;
 
-// Hough space is periodic such that the value at
-// (r, ϴ) ≣ ((-1)ⁿ×r, ϴ+nπ) for all r, ϴ, and integers n.  This can be
-// determined by subsitution using the parametric form of the line
-// r = x cos(ϴ) + y sin(ϴ).  Rather than constructing a special
-// variant of the "max" morphological operator that understands this,
-// we simply extend the window of Hough space to include enough
-// duplicate registers to allow the normal "max" operation to work
-// correctly: namely, half the width of the kernel, rounded up. This
-// extra space is called the margin.
+/*!
+ * Hough space is periodic such that the value at
+ * (r, ϴ) ≣ ((-1)ⁿ×r, ϴ+nπ) for all r, ϴ, and integers n.  This can be
+ * determined by subsitution using the parametric form of the line
+ * r = x cos(ϴ) + y sin(ϴ).  Rather than constructing a special
+ * variant of the "max" morphological operator that understands this,
+ * we simply extend the window of Hough space to include enough
+ * duplicate registers to allow the normal "max" operation to work
+ * correctly: namely, half the width of the kernel, rounded up. This
+ * extra space is called the margin.
+ */
 static const NSInteger kHoughRasterMargin = 25;
 
-// How many parts (as defined by kHoughPartsPerSemiturn) may a line be
-// off from straight vertical or horizontal yet still be considered.
+/*!
+ * How many parts (as defined by <code>kHoughPartsPerSemiturn</code>)
+ * may a line be off from straight vertical or horizontal yet still be
+ * considered.
+ */
 static const NSInteger kHoughAllowableSlant = 2;
 
 void __buffer_release(const void *address, void *context) {
