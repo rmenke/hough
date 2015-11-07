@@ -258,7 +258,8 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
         return NO;
     }
 
-    NSMutableArray<NSDictionary<NSString *, NSNumber *> *> *lines = [NSMutableArray array];
+    NSMutableArray<NSDictionary<NSString *, NSNumber *> *> *horizontal = [NSMutableArray array];
+    NSMutableArray<NSDictionary<NSString *, NSNumber *> *> *vertical   = [NSMutableArray array];
 
     // The coordinate translation in the buffer.
     const vector_double2 offset = { biasR, kHoughRasterMargin };
@@ -274,26 +275,28 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
                 vector_double2 cluster = clusterCenter(context, &buffer, r, theta + kHoughRasterMargin, value);
                 cluster -= offset;
                 cluster /= scale;
-                while (cluster.y >= 1.0) {
-                    cluster.y -= 2.0;
+
+                // Cluster is outside of the ROI. Its mirror image
+                // will be in the ROI, so do not count it twice.
+                if (cluster.y < 0.0 || cluster.y >= 1.0) continue;
+
+                // How many semiturns are we allowed to be from a
+                // horizontal or vertical?
+                const double delta = kHoughAllowableSlant / kHoughPartsPerSemiturn;
+
+                // semiturnsFromHorizontal ∈ [0, 0.5]
+                const double semiturnsFromHorizontal = fabs(fmod(cluster.y, 1.0) - 0.5);
+
+                NSDictionary * const line = @{R:@(cluster.x), T:@(cluster.y)};
+
+                if (semiturnsFromHorizontal <= delta) { // near horizontal
+                    [horizontal addObject:line];
+                } else if (semiturnsFromHorizontal >= 0.5 - delta) { // near vertical
+                    [vertical addObject:line];
                 }
-                while (cluster.y < 0.0) {
-                    cluster.x = -cluster.x; cluster.y += 1.0;
-                }
-                NSAssert(0 <= cluster.y && cluster.y < 1.0, @"cluster.y ∈ [0, 1)");
-                [lines addObject:@{R:@(cluster.x), T:@(cluster.y)}];
             }
         }
     }
-
-    [lines filterUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSDictionary<NSString *, NSNumber *> * _Nonnull line, NSDictionary<NSString *, id> * _Nullable bindings) {
-        const CGFloat theta = line[T].doubleValue;
-
-        // 'slant' measures the number of semiturns the line is off from the nearest vertical or horizontal.
-        const CGFloat slant = fabs(fmod(theta + 0.25, 0.5) - 0.25);
-
-        return slant <= (kHoughAllowableSlant / kHoughPartsPerSemiturn);
-    }]];
 
     free(buffer.data);
     free(maxima.data);
@@ -325,6 +328,8 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
     CGContextScaleCTM(ctx, 1, -1);
 
     CGContextSetRGBStrokeColor(ctx, 1, 0, 0, 1);
+
+    NSArray *lines = [[NSArray arrayWithArray:horizontal] arrayByAddingObjectsFromArray:vertical];
 
     for (NSDictionary<NSString *, NSNumber *> *line in lines) {
         CGFloat r = line[R].doubleValue;
