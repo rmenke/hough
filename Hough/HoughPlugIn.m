@@ -43,13 +43,6 @@ static const NSInteger kHoughPartsPerSemiturn = 256;
  */
 static const NSInteger kHoughRasterMargin = 25;
 
-/*!
- * How many parts (as defined by <code>kHoughPartsPerSemiturn</code>)
- * may a line be off from straight vertical or horizontal yet still be
- * considered.
- */
-static const NSInteger kHoughAllowableSlant = 2;
-
 void __buffer_release(const void *address, void *context) {
     free((void *)address);
 }
@@ -98,7 +91,7 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
     CGColorSpaceRef _gray, _bgra;
 }
 
-@dynamic inputImage, inputThreshold, outputStructure, outputImage;
+@dynamic inputImage, inputThreshold, inputAllowedSlant, outputStructure, outputImage;
 
 + (NSDictionary *)attributes {
     return @{QCPlugInAttributeNameKey:kQCPlugIn_Name, QCPlugInAttributeDescriptionKey:kQCPlugIn_Description};
@@ -111,6 +104,7 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
         propertyDictionary = @{
             @"inputImage": @{QCPortAttributeNameKey: @"Image"},
             @"inputThreshold": @{QCPortAttributeNameKey: @"Threshold", QCPortAttributeTypeKey: QCPortTypeNumber, QCPortAttributeDefaultValueKey: @(0.5), QCPortAttributeMinimumValueKey: @(0.0), QCPortAttributeMaximumValueKey: @(1.0)},
+            @"inputAllowedSlant": @{QCPortAttributeNameKey: @"Slant Tolerance", QCPortAttributeTypeKey: QCPortTypeNumber, QCPortAttributeDefaultValueKey: @(0.0), QCPortAttributeMinimumValueKey: @(0.0), QCPortAttributeMaximumValueKey: @(1.0)},
             @"outputStructure": @{QCPortAttributeNameKey: @"Line Info", QCPortAttributeTypeKey: QCPortTypeStructure},
             @"outputImage": @{QCPortAttributeNameKey: @"Output"}
         };
@@ -161,10 +155,13 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
         return YES;
     }
 
-    float threshold = self.inputThreshold;
+    CGFloat threshold = self.inputThreshold;
 
     if (threshold > 1) threshold = 1;
     if (threshold < 0) threshold = 0;
+
+    // allowedSlant ∈ [0, 0.25]
+    const CGFloat allowedSlant = self.inputAllowedSlant / 4.0;
 
     if (![inputImage lockBufferRepresentationWithPixelFormat:QCPlugInPixelFormatIf colorSpace:_gray forBounds:inputImage.imageBounds]) return NO;
 
@@ -280,18 +277,14 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
                 // will be in the ROI, so do not count it twice.
                 if (cluster.y < 0.0 || cluster.y >= 1.0) continue;
 
-                // How many semiturns are we allowed to be from a
-                // horizontal or vertical?
-                const double delta = kHoughAllowableSlant / kHoughPartsPerSemiturn;
-
                 // semiturnsFromHorizontal ∈ [0, 0.5]
                 const double semiturnsFromHorizontal = fabs(fmod(cluster.y, 1.0) - 0.5);
 
                 NSDictionary * const line = @{R:@(cluster.x), T:@(cluster.y)};
 
-                if (semiturnsFromHorizontal <= delta) { // near horizontal
+                if (semiturnsFromHorizontal <= allowedSlant) { // near horizontal
                     [horizontal addObject:line];
-                } else if (semiturnsFromHorizontal >= 0.5 - delta) { // near vertical
+                } else if (semiturnsFromHorizontal >= 0.5 - allowedSlant) { // near vertical
                     [vertical addObject:line];
                 }
             }
