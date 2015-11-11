@@ -172,15 +172,15 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
 
     if (width == 0 || height == 0) return NO;
 
-    // r ∈ [-biasR, biasR]
-    NSInteger biasR = ceil(hypot(width, height));
+    // r ∈ [0, maxR)
+    const NSInteger maxR = ceil(hypot(width, height));
 
-    const NSUInteger bufferWidth = kHoughPartsPerSemiturn + 2 * kHoughRasterMargin;
+    const NSUInteger bufferWidth = 2 * (kHoughPartsPerSemiturn + kHoughRasterMargin);
 
     vImage_Buffer buffer;
     vImage_Error error;
 
-    if ((error = vImageBuffer_Init(&buffer, 2 * biasR + 1, bufferWidth, 32, kvImageNoFlags)) != kvImageNoError) {
+    if ((error = vImageBuffer_Init(&buffer, maxR, bufferWidth, 32, kvImageNoFlags)) != kvImageNoError) {
         QCLog(@"vImageBuffer_Init: error = %zd", error);
         return NO;
     }
@@ -204,8 +204,8 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
 
                         NSInteger r = lround(x * cos_theta + y * sin_theta);
 
-                        if (r >= -biasR && r <= +biasR) {
-                            volatile int32_t *cell = buffer.data + (buffer.rowBytes * (r + biasR)) + (theta * sizeof(int32_t));
+                        if (0 <= r && r < maxR) {
+                            volatile int32_t *cell = buffer.data + (buffer.rowBytes * r) + (theta * sizeof(int32_t));
                             int32_t count = OSAtomicIncrement32(cell);
                             BOOL done = NO;
                             do {
@@ -259,8 +259,8 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
     NSMutableArray<NSDictionary<NSString *, NSNumber *> *> *vertical   = [NSMutableArray array];
 
     // The coordinate translation in the buffer.
-    const vector_double2 offset = { biasR, kHoughRasterMargin };
-    const vector_double2 scale  = { 1.0, kHoughPartsPerSemiturn };
+    const vector_double2 offset = { 0, kHoughRasterMargin };
+    const vector_double2 scale  = { 1.0, 2 * kHoughPartsPerSemiturn };
 
     for (NSInteger r = 0; r < buffer.height; ++r) {
         float * const srcRow = buffer.data + (buffer.rowBytes * r) + (kHoughRasterMargin * sizeof(float));
@@ -275,7 +275,7 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
 
                 // Cluster is outside of the ROI. Its mirror image
                 // will be in the ROI, so do not count it twice.
-                if (cluster.y < 0.0 || cluster.y >= 1.0) continue;
+                if (cluster.y < 0.0 || cluster.y >= 2.0) continue;
 
                 // semiturnsFromHorizontal ∈ [0, 0.5]
                 const double semiturnsFromHorizontal = fabs(fmod(cluster.y, 1.0) - 0.5);
