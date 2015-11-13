@@ -1715,7 +1715,7 @@
 						U09iamVjdACFhAFpAZKEhIQITlNT
 						dHJpbmcBlYQBKwhwb3NpdGlvboaS
 						hISEB05TVmFsdWUAlYQBKoSEDHtD
-						R1BvaW50PWRkfZuBjwGBuQCGhg==
+						R1BvaW50PWRkfZuBlwH5hoY=
 						</data>
 					</dict>
 				</dict>
@@ -1792,7 +1792,7 @@
 						U09iamVjdACFhAFpAZKEhIQITlNT
 						dHJpbmcBlYQBKwhwb3NpdGlvboaS
 						hISEB05TVmFsdWUAlYQBKoSEDHtD
-						R1BvaW50PWRkfZuBkgGBGQGGhg==
+						R1BvaW50PWRkfZuBmgFZhoY=
 						</data>
 						<key>version</key>
 						<integer>4</integer>
@@ -1809,6 +1809,21 @@
 					<dict>
 						<key>customInputPortStates</key>
 						<dict>
+							<key>inputAllowedSlant</key>
+							<dict>
+								<key>value</key>
+								<real>0.0</real>
+							</dict>
+							<key>inputMinHeight</key>
+							<dict>
+								<key>value</key>
+								<integer>100</integer>
+							</dict>
+							<key>inputMinWidth</key>
+							<dict>
+								<key>value</key>
+								<integer>100</integer>
+							</dict>
 							<key>inputThreshold</key>
 							<dict>
 								<key>value</key>
@@ -1823,7 +1838,7 @@
 						U09iamVjdACFhAFpAZKEhIQITlNT
 						dHJpbmcBlYQBKwhwb3NpdGlvboaS
 						hISEB05TVmFsdWUAlYQBKoSEDHtD
-						R1BvaW50PWRkfZspgSUBhoY=
+						R1BvaW50PWRkfZsxZYaG
 						</data>
 					</dict>
 				</dict>
@@ -1857,8 +1872,8 @@
 			YXJ5AISEDE5TRGljdGlvbmFyeQCEhAhOU09iamVjdACFhAFpA5KE
 			hIQITlNTdHJpbmcBlYQBKwp6b29tRmFjdG9yhpKEhIQITlNOdW1i
 			ZXIAhIQHTlNWYWx1ZQCVhAEqhIQBZpwBhpKEl5gJc2Nyb2xsaW5n
-			hpKEmpuEhAx7Q0dQb2ludD1kZH2dgR0BgwAAAAAAmHdAhpKEl5gI
-			cG9zaXRpb26GkoSam56dAAGGhg==
+			hpKEmpuEhAx7Q0dQb2ludD1kZH2dgwAAAAAA2HFAgwAAAAAA+HJA
+			hpKEl5gIcG9zaXRpb26GkoSam56dAAGGhg==
 			</data>
 		</dict>
 	</dict>

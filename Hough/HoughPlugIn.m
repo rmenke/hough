@@ -18,7 +18,7 @@ _Static_assert(sizeof(float) == 4, "floats should be 32-bit");
 #define kQCPlugIn_Name          @"Hough"
 #define kQCPlugIn_Description   @"Perform a Hough transformation on an image."
 
-#define R @"R"
+#define R @"r"
 #define T @"θ"
 
 #define QCLog(...) [context logMessage:__VA_ARGS__]
@@ -260,7 +260,7 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
 
     // The coordinate translation in the buffer.
     const vector_double2 offset = { 0, kHoughRasterMargin };
-    const vector_double2 scale  = { 1.0, 2 * kHoughPartsPerSemiturn };
+    const vector_double2 scale  = { 1.0, kHoughPartsPerSemiturn };
 
     for (NSInteger r = 0; r < buffer.height; ++r) {
         float * const srcRow = buffer.data + (buffer.rowBytes * r) + (kHoughRasterMargin * sizeof(float));
@@ -293,6 +293,11 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
 
     free(buffer.data);
     free(maxima.data);
+
+    NSArray<NSSortDescriptor *> *sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:R ascending:YES]];
+
+    [horizontal sortUsingDescriptors:sortDescriptors];
+    [vertical sortUsingDescriptors:sortDescriptors];
 
     if (![inputImage lockBufferRepresentationWithPixelFormat:QCPlugInPixelFormatBGRA8 colorSpace:_bgra forBounds:inputImage.imageBounds]) return NO;
 
