@@ -3,7 +3,7 @@
 //  Hough
 //
 //  Created by Rob Menke on 8/15/15.
-//  Copyright (c) 2015 Rob Menke. All rights reserved.
+//  Copyright © 2015 Rob Menke. All rights reserved.
 //
 
 #import "HoughPlugIn.h"
@@ -20,6 +20,7 @@ _Static_assert(sizeof(float) == 4, "floats should be 32-bit");
 
 #define R @"r"
 #define T @"θ"
+#define C @"#"
 
 #define QCLog(...) [context logMessage:__VA_ARGS__]
 
@@ -91,7 +92,7 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
     CGColorSpaceRef _gray, _bgra;
 }
 
-@dynamic inputImage, inputThreshold, inputAllowedSlant, outputStructure, outputImage;
+@dynamic inputImage, inputAllowedSlant, outputStructure, outputImage;
 
 + (NSDictionary *)attributes {
     return @{QCPlugInAttributeNameKey:kQCPlugIn_Name, QCPlugInAttributeDescriptionKey:kQCPlugIn_Description};
@@ -155,11 +156,6 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
         return YES;
     }
 
-    CGFloat threshold = self.inputThreshold;
-
-    if (threshold > 1) threshold = 1;
-    if (threshold < 0) threshold = 0;
-
     // allowedSlant ∈ [0, 0.25]
     const CGFloat allowedSlant = self.inputAllowedSlant / 4.0;
 
@@ -196,7 +192,7 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
         float *row = (float *)(data + y * rowBytes);
         for (NSUInteger x = 0; x < width; ++x) {
             float *cell = row + x;
-            if (*cell <= threshold) {
+            if (*cell < 0.5) {
                 dispatch_group_async(group, queue, ^{
                     for (NSInteger theta = 0; theta < bufferWidth; ++theta) {
                         const CGFloat semiturns = (CGFloat)(theta - kHoughRasterMargin) / (CGFloat)(kHoughPartsPerSemiturn);
@@ -280,7 +276,7 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
                 // semiturnsFromHorizontal ∈ [0, 0.5]
                 const double semiturnsFromHorizontal = fabs(fmod(cluster.y, 1.0) - 0.5);
 
-                NSDictionary * const line = @{R:@(cluster.x), T:@(cluster.y)};
+                NSDictionary * const line = @{R:@(cluster.x), T:@(cluster.y), C:@(value)};
 
                 if (semiturnsFromHorizontal <= allowedSlant) { // near horizontal
                     [horizontal addObject:line];

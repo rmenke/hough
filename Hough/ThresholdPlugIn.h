@@ -1,19 +1,18 @@
 //
-//  HoughPlugIn.h
+//  ThresholdPlugIn.h
 //  Hough
 //
-//  Created by Rob Menke on 8/15/15.
+//  Created by Robert Menke on 11/16/15.
 //  Copyright © 2015 Rob Menke. All rights reserved.
 //
 
 @import Quartz;
 
-@interface HoughPlugIn : QCPlugIn
+@interface ThresholdPlugIn : QCPlugIn
 
 @property (readonly) id<QCPlugInInputImageSource> inputImage;
-@property (readonly) CGFloat inputAllowedSlant;
+@property (readonly) CGFloat inputThreshold;
 
 @property (retain) id<QCPlugInOutputImageProvider> outputImage;
-@property (retain) NSArray *outputStructure;
 
 @end

@@ -24,6 +24,7 @@
 	<string>Copyright © 2015 Rob Menke. All rights reserved.</string>
 	<key>QCPlugInClasses</key>
 	<array>
+		<string>ThresholdPlugIn</string>
 		<string>HoughPlugIn</string>
 	</array>
 </dict>
