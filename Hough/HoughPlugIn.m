@@ -49,6 +49,18 @@ void __buffer_release(const void *address, void *context) {
 }
 
 FOUNDATION_STATIC_INLINE
+uint32_t up2(uint32_t v) {
+  --v;
+  v |= v >> 1;
+  v |= v >> 2;
+  v |= v >> 4;
+  v |= v >> 8;
+  v |= v >> 16;
+
+  return v + 1;
+}
+
+FOUNDATION_STATIC_INLINE
 void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat width, const CGFloat height, CGPoint *p1, CGPoint *p2) {
     const CGFloat sin_theta = __sinpi(semiturns), cos_theta = __cospi(semiturns);
 
@@ -217,6 +229,8 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
 
     dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
 
+    [inputImage unlockBufferRepresentation];
+
     if (max == 0) {
         free(buffer.data);
         self.outputImage = nil;
@@ -224,13 +238,13 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
         return YES;
     }
 
-    [inputImage unlockBufferRepresentation];
+    const float cellScale = up2(max);
 
     dispatch_apply(buffer.height, queue, ^(size_t r) {
         float * const row = buffer.data + buffer.rowBytes * r;
         for (NSInteger theta = 0; theta < bufferWidth; ++theta) {
             float * const cell = row + theta;
-            *cell = *(int32_t *)(cell);
+            *cell = *(int32_t *)(cell) / cellScale;
         }
     });
 
