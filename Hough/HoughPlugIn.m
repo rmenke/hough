@@ -24,6 +24,12 @@ _Static_assert(sizeof(float) == 4, "floats should be 32-bit");
 
 #define QCLog(...) [context logMessage:__VA_ARGS__]
 
+#if CGFLOAT_IS_DOUBLE
+#define cgFloatValue doubleValue
+#else
+#define cgFloatValue floatValue
+#endif
+
 /*!
  * The following uses a power-of-two to make life easier for
  * <code>_sinpi()</code> and friends.  N/256 is always exact in
@@ -44,60 +50,11 @@ static const NSInteger kHoughPartsPerSemiturn = 256;
  */
 static const NSInteger kHoughRasterMargin = 25;
 
+static const NSInteger kHoughMinWidth = 50;
+static const NSInteger kHoughMinHeight = 50;
+
 void __buffer_release(const void *address, void *context) {
     free((void *)address);
-}
-
-FOUNDATION_STATIC_INLINE
-uint32_t up2(uint32_t v) {
-  --v;
-  v |= v >> 1;
-  v |= v >> 2;
-  v |= v >> 4;
-  v |= v >> 8;
-  v |= v >> 16;
-
-  return v + 1;
-}
-
-FOUNDATION_STATIC_INLINE
-void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat width, const CGFloat height, CGPoint *p1, CGPoint *p2) {
-    const CGFloat sin_theta = __sinpi(semiturns), cos_theta = __cospi(semiturns);
-
-    if (sin_theta == 0.0) {
-        CGFloat x = r / cos_theta;
-        p1->x = p2->x = x;
-        p1->y = 0; p2->y = height;
-    } else if (cos_theta == 0.0) {
-        CGFloat y = r / sin_theta;
-        p1->x = 0; p2->x = width;
-        p1->y = p2->y = y;
-    } else {
-        CGFloat x0 = r / cos_theta;
-        CGFloat y0 = r / sin_theta;
-        CGFloat x1 = (r - height * sin_theta) / cos_theta;
-        CGFloat y1 = (r - width * cos_theta) / sin_theta;
-
-        if (0.0 <= x0 && x0 <= width) {
-            p1->x = x0; p1->y = 0;
-        } else if (0.0 <= y0 && y0 <= height) {
-            p1->x = 0; p1->y = y0;
-        } else if (0.0 <= x1 && x1 <= width) {
-            p1->x = x1; p1->y = height;
-        } else { // if (0.0 <= y1 && y1 <= height)
-            p1->x = width; p1->y = y1;
-        }
-
-        if (0.0 <= y1 && y1 <= height) {
-            p2->x = width; p2->y = y1;
-        } else if (0.0 <= x1 && x1 <= width) {
-            p2->x = x1; p2->y = height;
-        } else if (0.0 <= y0 && y0 <= height) {
-            p2->x = 0; p2->y = y0;
-        } else { // if (0.0 <= x0 && x0 <= width)
-            p2->x = x0; p2->y = 0;
-        }
-    }
 }
 
 @implementation HoughPlugIn {
@@ -195,8 +152,6 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
 
     memset(buffer.data, 0, buffer.rowBytes * buffer.height);
 
-    __block volatile int32_t max = 0;
-
     dispatch_queue_t queue = dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
     dispatch_group_t group = dispatch_group_create();
 
@@ -214,12 +169,7 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
 
                         if (0 <= r && r < maxR) {
                             volatile int32_t *cell = buffer.data + (buffer.rowBytes * r) + (theta * sizeof(int32_t));
-                            int32_t count = OSAtomicIncrement32(cell);
-                            BOOL done = NO;
-                            do {
-                                int32_t oldMax = max;
-                                done = (count <= oldMax) || OSAtomicCompareAndSwap32(oldMax, count, &max);
-                            } while (!done);
+                            OSAtomicIncrement32(cell);
                         }
                     }
                 });
@@ -231,20 +181,11 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
 
     [inputImage unlockBufferRepresentation];
 
-    if (max == 0) {
-        free(buffer.data);
-        self.outputImage = nil;
-        self.outputStructure = @[];
-        return YES;
-    }
-
-    const float cellScale = up2(max);
-
     dispatch_apply(buffer.height, queue, ^(size_t r) {
         float * const row = buffer.data + buffer.rowBytes * r;
         for (NSInteger theta = 0; theta < bufferWidth; ++theta) {
             float * const cell = row + theta;
-            *cell = *(int32_t *)(cell) / cellScale;
+            *cell = *(int32_t *)(cell);
         }
     });
 
@@ -304,10 +245,36 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
     free(buffer.data);
     free(maxima.data);
 
-    NSArray<NSSortDescriptor *> *sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:R ascending:YES]];
+    NSArray<NSSortDescriptor *> *sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:C ascending:NO]];
 
     [horizontal sortUsingDescriptors:sortDescriptors];
     [vertical sortUsingDescriptors:sortDescriptors];
+
+    [horizontal filterUsingPredicate:[NSPredicate predicateWithFormat:@"SELF['#'] >= 0.9 * %@", horizontal[0][C]]];
+    [vertical filterUsingPredicate:[NSPredicate predicateWithFormat:@"SELF['#'] >= 0.9 * %@", vertical[0][C]]];
+
+    sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:R ascending:YES]];
+
+    [horizontal sortUsingDescriptors:sortDescriptors];
+    [vertical sortUsingDescriptors:sortDescriptors];
+
+    NSMutableArray<NSValue *> *rects = [NSMutableArray array];
+
+    for (int x = 1; x < vertical.count; ++x) {
+        CGFloat left = vertical[x - 1][R].cgFloatValue;
+        CGFloat right = vertical[x][R].cgFloatValue;
+
+        for (int y = 1; y < horizontal.count; ++y) {
+            CGFloat top = horizontal[y - 1][R].cgFloatValue;
+            CGFloat bottom = horizontal[y][R].cgFloatValue;
+
+            CGRect r = CGRectMake(left, top, right - left, bottom - top);
+
+            if (CGRectGetWidth(r) >= kHoughMinWidth && CGRectGetHeight(r) >= kHoughMinHeight) {
+                [rects addObject:[NSValue valueWithRect:NSRectFromCGRect(r)]];
+            }
+        }
+    }
 
     if (![inputImage lockBufferRepresentationWithPixelFormat:QCPlugInPixelFormatBGRA8 colorSpace:_bgra forBounds:inputImage.imageBounds]) return NO;
 
@@ -337,21 +304,9 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
 
     CGContextSetRGBStrokeColor(ctx, 1, 0, 0, 1);
 
-    NSArray *lines = [[NSArray arrayWithArray:horizontal] arrayByAddingObjectsFromArray:vertical];
-
-    for (NSDictionary<NSString *, NSNumber *> *line in lines) {
-        CGFloat r = line[R].doubleValue;
-        CGFloat semiturns = line[T].doubleValue;
-
-        CGPoint p1, p2;
-
-        const CGFloat height = buffer.height;
-        const CGFloat width  = buffer.width;
-
-        findIntercepts(r, semiturns, width, height, &p1, &p2);
-
-        CGContextMoveToPoint(ctx, p1.x, p1.y);
-        CGContextAddLineToPoint(ctx, p2.x, p2.y);
+    for (NSValue *rect in rects) {
+        NSRect r = rect.rectValue;
+        CGContextAddRect(ctx, NSRectToCGRect(r));
     }
 
     CGContextStrokePath(ctx);
@@ -360,7 +315,7 @@ void findIntercepts(const CGFloat r, const CGFloat semiturns, const CGFloat widt
 
     self.outputImage = [context outputImageProviderFromBufferWithPixelFormat:QCPlugInPixelFormatBGRA8 pixelsWide:buffer.width pixelsHigh:buffer.height baseAddress:buffer.data bytesPerRow:buffer.rowBytes releaseCallback:__buffer_release releaseContext:NULL colorSpace:_bgra shouldColorMatch:YES];
 
-    self.outputStructure = lines;
+    self.outputStructure = rects;
 
     return YES;
 }
