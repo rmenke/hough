@@ -18,7 +18,7 @@ vector_double2 clusterCenter(id<QCPlugInContext> context, const vImage_Buffer *b
         NSCAssert(r < buffer->height, @"r ∈ [0, %lu) failed [r=%lu]", buffer->height, (unsigned long)r);
         NSCAssert(t < buffer->width, @"t ∈ [0, %lu) failed [t=%lu]", buffer->width, (unsigned long)t);
         NSCAssert(srcRow[t] == value, @"v(t) = %f failed [v(t)=%f]", value, srcRow[t]);
-        NSCAssert((t == 0) || (srcRow[t - 1] != value), @"t = 0 or v(t-1) ≠ maxima [t=%lu, v(t-1)=%f]", (unsigned long)t, t == 0 ? 0 : srcRow[t - 1]);
+        NSCAssert((t == 0) || (srcRow[t - 1] != value), @"t = 0 or v(t-1) ≠ maxima [t=%lu, v(t-1)=%f, maxima=%f]", (unsigned long)t, t == 0 ? nan("") : srcRow[t - 1], value);
 
         NSUInteger start = t, end = t + 1;
 
