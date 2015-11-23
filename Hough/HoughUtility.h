@@ -30,4 +30,4 @@
  * is found or the end of the previous pixel row is reached.  If the
  * pixel was found, repeat; otherwise, exit.
  */
-vector_double2 clusterCenter(id<QCPlugInContext> context, vImage_Buffer *buffer, NSUInteger r, NSUInteger t, float value);
+vector_double2 clusterCenter(id<QCPlugInContext> context, const vImage_Buffer *buffer, NSUInteger r, NSUInteger t, float value);

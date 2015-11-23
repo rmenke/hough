@@ -8,7 +8,7 @@
 
 #import "HoughUtility.h"
 
-vector_double2 clusterCenter(id<QCPlugInContext> context, vImage_Buffer *buffer, NSUInteger r, NSUInteger t, float value) {
+vector_double2 clusterCenter(id<QCPlugInContext> context, const vImage_Buffer *buffer, NSUInteger r, NSUInteger t, float value) {
     vector_double2 centroid = { 0, 0 };
     NSUInteger pixelCount = 0;
 

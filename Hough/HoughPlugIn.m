@@ -73,7 +73,6 @@ void __buffer_release(const void *address, void *context) {
     dispatch_once(&onceToken, ^{
         propertyDictionary = @{
             @"inputImage": @{QCPortAttributeNameKey: @"Image"},
-            @"inputThreshold": @{QCPortAttributeNameKey: @"Threshold", QCPortAttributeTypeKey: QCPortTypeNumber, QCPortAttributeDefaultValueKey: @(0.5), QCPortAttributeMinimumValueKey: @(0.0), QCPortAttributeMaximumValueKey: @(1.0)},
             @"inputAllowedSlant": @{QCPortAttributeNameKey: @"Slant Tolerance", QCPortAttributeTypeKey: QCPortTypeNumber, QCPortAttributeDefaultValueKey: @(0.0), QCPortAttributeMinimumValueKey: @(0.0), QCPortAttributeMaximumValueKey: @(1.0)},
             @"outputStructure": @{QCPortAttributeNameKey: @"Line Info", QCPortAttributeTypeKey: QCPortTypeStructure},
             @"outputImage": @{QCPortAttributeNameKey: @"Output"}
@@ -94,6 +93,12 @@ void __buffer_release(const void *address, void *context) {
 @end
 
 @implementation HoughPlugIn (Execution)
+
+- (void)orderAndFilterLines:(NSMutableArray<NSDictionary<NSString *, NSNumber *> *> *)lines {
+    NSUInteger max = [[lines valueForKeyPath:@"@max.#"] unsignedIntegerValue];
+    [lines filterUsingPredicate:[NSPredicate predicateWithFormat:@"SELF['#'] >= 0.9 * %lu", max]];
+    [lines sortUsingDescriptors:@[[NSSortDescriptor sortDescriptorWithKey:R ascending:YES]]];
+}
 
 - (BOOL)startExecution:(id<QCPlugInContext>)context {
     _gray = CGColorSpaceCreateWithName(kCGColorSpaceGenericGray);
@@ -245,18 +250,8 @@ void __buffer_release(const void *address, void *context) {
     free(buffer.data);
     free(maxima.data);
 
-    NSArray<NSSortDescriptor *> *sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:C ascending:NO]];
-
-    [horizontal sortUsingDescriptors:sortDescriptors];
-    [vertical sortUsingDescriptors:sortDescriptors];
-
-    [horizontal filterUsingPredicate:[NSPredicate predicateWithFormat:@"SELF['#'] >= 0.9 * %@", horizontal[0][C]]];
-    [vertical filterUsingPredicate:[NSPredicate predicateWithFormat:@"SELF['#'] >= 0.9 * %@", vertical[0][C]]];
-
-    sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:R ascending:YES]];
-
-    [horizontal sortUsingDescriptors:sortDescriptors];
-    [vertical sortUsingDescriptors:sortDescriptors];
+    [self orderAndFilterLines:horizontal];
+    [self orderAndFilterLines:vertical];
 
     NSMutableArray<NSValue *> *rects = [NSMutableArray array];
 
