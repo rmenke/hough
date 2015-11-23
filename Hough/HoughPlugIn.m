@@ -50,9 +50,6 @@ static const NSInteger kHoughPartsPerSemiturn = 256;
  */
 static const NSInteger kHoughRasterMargin = 25;
 
-static const NSInteger kHoughMinWidth = 50;
-static const NSInteger kHoughMinHeight = 50;
-
 void __buffer_release(const void *address, void *context) {
     free((void *)address);
 }
@@ -61,7 +58,7 @@ void __buffer_release(const void *address, void *context) {
     CGColorSpaceRef _gray, _bgra;
 }
 
-@dynamic inputImage, inputAllowedSlant, outputStructure, outputImage;
+@dynamic inputImage, inputAllowedSlant, inputMinWidth, inputMinHeight, outputStructure, outputImage;
 
 + (NSDictionary *)attributes {
     return @{QCPlugInAttributeNameKey:kQCPlugIn_Name, QCPlugInAttributeDescriptionKey:kQCPlugIn_Description};
@@ -74,6 +71,8 @@ void __buffer_release(const void *address, void *context) {
         propertyDictionary = @{
             @"inputImage": @{QCPortAttributeNameKey: @"Image"},
             @"inputAllowedSlant": @{QCPortAttributeNameKey: @"Slant Tolerance", QCPortAttributeTypeKey: QCPortTypeNumber, QCPortAttributeDefaultValueKey: @(0.0), QCPortAttributeMinimumValueKey: @(0.0), QCPortAttributeMaximumValueKey: @(1.0)},
+            @"inputMinWidth": @{QCPortAttributeNameKey: @"Min Width", QCPortAttributeTypeKey: QCPortTypeNumber, QCPortAttributeDefaultValueKey: @(50.0), QCPortAttributeMinimumValueKey: @(0.0)},
+            @"inputMinHeight": @{QCPortAttributeNameKey: @"Min Height", QCPortAttributeTypeKey: QCPortTypeNumber, QCPortAttributeDefaultValueKey: @(50.0), QCPortAttributeMinimumValueKey: @(0.0)},
             @"outputStructure": @{QCPortAttributeNameKey: @"Line Info", QCPortAttributeTypeKey: QCPortTypeStructure},
             @"outputImage": @{QCPortAttributeNameKey: @"Output"}
         };
@@ -255,6 +254,9 @@ void __buffer_release(const void *address, void *context) {
 
     NSMutableArray<NSValue *> *rects = [NSMutableArray array];
 
+    const NSInteger minWidth = self.inputMinWidth;
+    const NSInteger minHeight = self.inputMinHeight;
+
     for (int x = 1; x < vertical.count; ++x) {
         CGFloat left = vertical[x - 1][R].cgFloatValue;
         CGFloat right = vertical[x][R].cgFloatValue;
@@ -265,7 +267,7 @@ void __buffer_release(const void *address, void *context) {
 
             CGRect r = CGRectMake(left, top, right - left, bottom - top);
 
-            if (CGRectGetWidth(r) >= kHoughMinWidth && CGRectGetHeight(r) >= kHoughMinHeight) {
+            if (CGRectGetWidth(r) >= minWidth && CGRectGetHeight(r) >= minHeight) {
                 [rects addObject:[NSValue valueWithRect:NSRectFromCGRect(r)]];
             }
         }

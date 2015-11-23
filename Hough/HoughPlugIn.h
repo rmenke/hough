@@ -12,6 +12,7 @@
 
 @property (readonly) id<QCPlugInInputImageSource> inputImage;
 @property (readonly) CGFloat inputAllowedSlant;
+@property (readonly) CGFloat inputMinWidth, inputMinHeight;
 
 @property (retain) id<QCPlugInOutputImageProvider> outputImage;
 @property (retain) NSArray *outputStructure;
