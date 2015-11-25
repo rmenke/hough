@@ -11,10 +11,8 @@
 @interface HoughPlugIn : QCPlugIn
 
 @property (readonly) id<QCPlugInInputImageSource> inputImage;
-@property (readonly) CGFloat inputAllowedSlant;
-@property (readonly) CGFloat inputMinWidth, inputMinHeight;
+@property (readonly) CGFloat inputMargin;
 
 @property (retain) id<QCPlugInOutputImageProvider> outputImage;
-@property (retain) NSArray *outputStructure;
 
 @end
