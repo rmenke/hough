@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AE2A9BB81C0E56A5004E2C6D /* MaximaPlugIn.m in Sources */ = {isa = PBXBuildFile; fileRef = AE2A9BB71C0E56A5004E2C6D /* MaximaPlugIn.m */; settings = {ASSET_TAGS = (); }; };
 		AE5DF9A81BFA776C00342F01 /* ThresholdPlugIn.m in Sources */ = {isa = PBXBuildFile; fileRef = AE5DF9A71BFA776C00342F01 /* ThresholdPlugIn.m */; settings = {ASSET_TAGS = (); }; };
 		AEAC79971BE81BBB003B012E /* HoughTest.m in Sources */ = {isa = PBXBuildFile; fileRef = AEAC79961BE81BBB003B012E /* HoughTest.m */; };
 		AEAC799F1BE828FB003B012E /* Hough.plugin in CopyFiles */ = {isa = PBXBuildFile; fileRef = E1CAC0F41B7FF0E300D4EA94 /* Hough.plugin */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -39,6 +40,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AE2A9BB61C0E56A5004E2C6D /* MaximaPlugIn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MaximaPlugIn.h; sourceTree = "<group>"; };
+		AE2A9BB71C0E56A5004E2C6D /* MaximaPlugIn.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MaximaPlugIn.m; sourceTree = "<group>"; };
 		AE46AFA21BA0E161004A2008 /* Test Hough.qtz */ = {isa = PBXFileReference; lastKnownFileType = "video.quartz-composer"; path = "Test Hough.qtz"; sourceTree = "<group>"; };
 		AE46AFA31BA0E17A004A2008 /* Sample-1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Sample-1.png"; sourceTree = "<group>"; };
 		AE5DF9A61BFA776C00342F01 /* ThresholdPlugIn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ThresholdPlugIn.h; sourceTree = "<group>"; };
@@ -120,6 +123,8 @@
 				AE5DF9A71BFA776C00342F01 /* ThresholdPlugIn.m */,
 				E1CAC0F91B7FF0E300D4EA94 /* HoughPlugIn.h */,
 				E1CAC0FA1B7FF0E300D4EA94 /* HoughPlugIn.m */,
+				AE2A9BB61C0E56A5004E2C6D /* MaximaPlugIn.h */,
+				AE2A9BB71C0E56A5004E2C6D /* MaximaPlugIn.m */,
 				AEAC79A11BE84211003B012E /* HoughUtility.h */,
 				AEAC79A01BE84211003B012E /* HoughUtility.m */,
 				E1CAC0F71B7FF0E300D4EA94 /* Supporting Files */,
@@ -251,6 +256,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AEAC79A21BE84211003B012E /* HoughUtility.m in Sources */,
+				AE2A9BB81C0E56A5004E2C6D /* MaximaPlugIn.m in Sources */,
 				E1CAC0FB1B7FF0E300D4EA94 /* HoughPlugIn.m in Sources */,
 				AE5DF9A81BFA776C00342F01 /* ThresholdPlugIn.m in Sources */,
 			);

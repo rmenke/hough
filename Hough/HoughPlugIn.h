@@ -10,9 +10,14 @@
 
 @interface HoughPlugIn : QCPlugIn
 
+/*! The input image to process. */
 @property (readonly) id<QCPlugInInputImageSource> inputImage;
-@property (readonly) CGFloat inputMargin;
+/*! Additional pixels to add to the Hough space raster. */
+@property (readonly) NSUInteger inputMargin;
 
+/*! The Hough space raster. */
 @property (retain) id<QCPlugInOutputImageProvider> outputImage;
+/*! The maximum value assigned in the output raster. */
+@property (assign) NSUInteger outputMax;
 
 @end

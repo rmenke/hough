@@ -25,6 +25,7 @@
 	<key>QCPlugInClasses</key>
 	<array>
 		<string>ThresholdPlugIn</string>
+		<string>HotSpotPlugIn</string>
 		<string>HoughPlugIn</string>
 	</array>
 </dict>

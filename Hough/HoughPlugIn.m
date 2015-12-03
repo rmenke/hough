@@ -24,28 +24,44 @@ _Static_assert(sizeof(float) == 4, "floats should be 32-bit");
 
 #define QCLog(...) [context logMessage:__VA_ARGS__]
 
-#if CGFLOAT_IS_DOUBLE
-#define cgFloatValue doubleValue
-#else
-#define cgFloatValue floatValue
-#endif
+static inline int32_t roundUpToPowerOfTwo(int32_t x) {
+    NSCAssert(x > 0, @"arg must be positive, is %" PRId32, x);
+
+    x -= 1;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    x += 1;
+
+    NSCAssert((x & (x - 1)) == 0, @"result should be a power of two, is %" PRId32, x);
+
+    return x;
+}
 
 /*!
- * The following uses a power-of-two to make life easier for
- * <code>_sinpi()</code> and friends.  N/256 is always exact in
- * floating point.
+ * @abstract Conversion factor from semiturns (π㎭ or 180°) to a
+ *   smaller value based on a power of two.
+ * @discussion Using a power-of-two makes life easier for
+ *   <code>__sinpi()</code> and friends.  N/256 is always exact in
+ *   floating point and directly computable with the half-angle
+ *   formulae.
  */
 static const NSInteger kHoughPartsPerSemiturn = 256;
 
-void __buffer_release(const void *address, void *context) {
-    free((void *)address);
-}
+/*
+ * This is dangerously non-portable, but works since we are allowed to
+ * ignore superfluous parameters and 'const' in C99 is only a compiler
+ * hint.
+ */
+static const QCPlugInBufferReleaseCallback __buffer_release = (void *)(free);
 
 @implementation HoughPlugIn {
     CGColorSpaceRef _gray;
 }
 
-@dynamic inputImage, inputMargin, outputImage;
+@dynamic inputImage, inputMargin, outputImage, outputMax;
 
 + (NSDictionary *)attributes {
     return @{QCPlugInAttributeNameKey:kQCPlugIn_Name, QCPlugInAttributeDescriptionKey:kQCPlugIn_Description};
@@ -53,11 +69,13 @@ void __buffer_release(const void *address, void *context) {
 
 + (NSDictionary *)attributesForPropertyPortWithKey:(NSString *)key {
     if ([key isEqualToString:@"inputImage"]) {
-        return @{QCPortAttributeNameKey: @"Image"};
+        return @{QCPortAttributeNameKey:@"Image"};
     } else if ([key isEqualToString:@"inputMargin"]) {
-        return @{QCPortAttributeNameKey: @"Margin", QCPortAttributeTypeKey: QCPortTypeNumber, QCPortAttributeDefaultValueKey: @(0.5), QCPortAttributeMinimumValueKey: @(0.0), QCPortAttributeMaximumValueKey: @(2.0)};
+        return @{QCPortAttributeNameKey:@"Margin", QCPortAttributeDefaultValueKey:@(50), QCPortAttributeMaximumValueKey:@(100)};
     } else if ([key isEqualToString:@"outputImage"]) {
-        return @{QCPortAttributeNameKey: @"Image"};
+        return @{QCPortAttributeNameKey:@"Image"};
+    } else if ([key isEqualToString:@"outputMax"]) {
+        return @{QCPortAttributeNameKey:@"Maximum", QCPortAttributeMinimumValueKey:@(1)};
     }
 
     return nil;
@@ -98,18 +116,18 @@ void __buffer_release(const void *address, void *context) {
     }
 
     /*!
-     * Hough space is periodic such that the value at
-     * (r, ϴ) ≣ ((-1)ⁿ×r, ϴ+nπ) for all r, ϴ, and integers n.  This can be
-     * determined by substitution using the parametric form of the line
-     * r = x·cos(ϴ) + y·sin(ϴ).  Rather than constructing a special
-     * variant of the "max" morphological operator that understands this,
-     * we simply extend the window of Hough space to include enough
-     * duplicate registers to allow the normal "max" operation to work
-     * correctly: namely, half the width of the kernel, rounded up. This
-     * extra space is called the margin.  The input margin is measured in
-     * semiturns.
+     * @abstract The additional width (in parts) to add to the Hough space.
+     *
+     * @discussion Hough space is periodic such that the value at
+     *   (r, ϴ) = ((-1)ⁿ×r, ϴ+nπ) for all r, ϴ, and integers n.  This
+     *   can be determined by substitution using the parametric form
+     *   of the line r = x·cos(ϴ) + y·sin(ϴ).  Rather than
+     *   constructing a special variant of the "max" morphological
+     *   operator that understands this, we simply extend the window
+     *   of Hough space to include enough duplicate registers to allow
+     *   the normal "max" operation to work correctly.
      */
-    const NSInteger rasterMargin = self.inputMargin * kHoughPartsPerSemiturn;
+    const NSInteger rasterMargin = self.inputMargin;
 
     if (![inputImage lockBufferRepresentationWithPixelFormat:QCPlugInPixelFormatIf colorSpace:_gray forBounds:inputImage.imageBounds]) return NO;
 
@@ -126,7 +144,7 @@ void __buffer_release(const void *address, void *context) {
     // r ∈ [0, maxR)
     const NSInteger maxR = ceil(hypot(width, height));
 
-    // θ ∈ [-margin, 2 + margin) [in semiturns]
+    // θ ∈ [-margin, 2 + margin)
     const NSUInteger bufferWidth = 2 * (kHoughPartsPerSemiturn + rasterMargin);
 
     vImage_Buffer buffer;
@@ -139,7 +157,8 @@ void __buffer_release(const void *address, void *context) {
 
     memset(buffer.data, 0, buffer.rowBytes * buffer.height);
 
-    __block volatile int32_t maxRegister = 0;
+    // Cannot be zero, because this value is used as a scaling factor.
+    __block volatile int32_t volatileMaximum = 1;
 
     dispatch_queue_t queue = dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0);
     dispatch_group_t group = dispatch_group_create();
@@ -156,12 +175,14 @@ void __buffer_release(const void *address, void *context) {
                         NSInteger r = lround(x * cos_theta + y * sin_theta);
 
                         if (0 <= r && r < maxR) {
-                            volatile int32_t *cell = buffer.data + (buffer.rowBytes * r) + (theta * sizeof(int32_t));
+                            volatile int32_t *cell = buffer.data + buffer.rowBytes * r + sizeof(int32_t) * theta;
                             int32_t count = OSAtomicIncrement32(cell);
                             BOOL done;
                             do {
-                                int32_t oldMax = maxRegister;
-                                done = (oldMax >= count) || OSAtomicCompareAndSwap32(oldMax, count, &maxRegister);
+                                int32_t oldMaximum = volatileMaximum;
+                                if (!(done = oldMaximum >= count)) {
+                                    done = OSAtomicCompareAndSwap32(oldMaximum, count, &volatileMaximum);
+                                }
                             } while (!done);
                         }
                     }
@@ -174,34 +195,24 @@ void __buffer_release(const void *address, void *context) {
 
     [inputImage unlockBufferRepresentation];
 
-    // Accessing maxRegister is an expensive operation because it is marked volatile.
-    // By this point, its volatility is no longer necessary.
-    uint32_t maxValue = maxRegister;
+    const CGFloat scale = roundUpToPowerOfTwo(volatileMaximum);
 
-    if (maxValue == 0) {
-        self.outputImage = nil;
-        return YES;
-    }
+    typedef union {
+        float f; int32_t i;
+    } Cell;
 
-    maxValue--;
-    maxValue |= maxValue >> 1;
-    maxValue |= maxValue >> 2;
-    maxValue |= maxValue >> 4;
-    maxValue |= maxValue >> 8;
-    maxValue |= maxValue >> 16;
-    maxValue++;
-
-    const float scaleFactor = maxValue;
+    _Static_assert(sizeof(Cell) == 4, "Cells should be 32-bit");
 
     dispatch_apply(buffer.height, queue, ^(size_t r) {
-        float * const row = buffer.data + buffer.rowBytes * r;
+        Cell * const row = buffer.data + buffer.rowBytes * r;
         for (NSInteger theta = 0; theta < bufferWidth; ++theta) {
-            float * const cell = row + theta;
-            *cell = *(int32_t *)(cell) / scaleFactor;
+            Cell * const cell = row + theta;
+            cell->f = cell->i / scale;
         }
     });
 
     self.outputImage = [context outputImageProviderFromBufferWithPixelFormat:QCPlugInPixelFormatIf pixelsWide:buffer.width pixelsHigh:buffer.height baseAddress:buffer.data bytesPerRow:buffer.rowBytes releaseCallback:__buffer_release releaseContext:NULL colorSpace:_gray shouldColorMatch:NO];
+    self.outputMax = scale;
 
     return YES;
 }
